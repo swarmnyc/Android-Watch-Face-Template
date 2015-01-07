@@ -14,10 +14,12 @@
  limitations under the License.
 -->
 <resources>
-    <dimen name="weather_time_size">67dp</dimen>
-    <dimen name="weather_time_size_round">72dp</dimen>
-    <dimen name="weather_date_size">25dp</dimen>
-    <dimen name="weather_date_size_round">30dp</dimen>
+    <dimen name="weather_time_size">20pt</dimen>
+    <dimen name="weather_time_size_round">22pt</dimen>
+    <dimen name="weather_date_size">8pt</dimen>
+    <dimen name="weather_date_size_round">10pt</dimen>
+    <dimen name="weather_date_suffix_size">4pt</dimen>
+    <dimen name="weather_date_suffix_size_round">6pt</dimen>
     <dimen name="weather_temperature_size">25dp</dimen>
     <dimen name="weather_temperature_size_round">30dp</dimen>
     <dimen name="weather_internal_distance">14dp</dimen>

@@ -89,7 +89,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         Paint mBackgroundPaint;
         Paint mTimePaint;
         Paint mDatePaint;
-        float mColonWidth;
+        Paint mDateSuffixPaint;
+        float mColonXOffset;
         Paint mTemperaturePaint;
         long mInteractiveUpdateRateMs = NORMAL_UPDATE_RATE_MS;
         Time mTime;
@@ -103,8 +104,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         boolean mMute;
         private Resources resources;
         private AssetManager asserts;
-        private float mTimeOffset;
-        private float mDateOffset;
+        private float mTimeYOffset;
+        private float mDateYOffset;
+        private float mDateSuffixYOffset;
         private float mInternalDistance;
 
         @Override
@@ -123,17 +125,23 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mInternalDistance = resources.getDimension(R.dimen.weather_internal_distance);
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.weather_bg_color));
+
+            Typeface timeFont = Typeface.createFromAsset(asserts, resources.getString(R.string.weather_date_font));
+            Typeface dateFont = Typeface.createFromAsset(asserts, resources.getString(R.string.weather_time_font));
+
             mTimePaint = createTextPaint(resources.getColor(R.color.weather_time_color),
-                    Typeface.createFromAsset(asserts, resources.getString(R.string.weather_date_font)));
+                    timeFont);
 
             mDatePaint = createTextPaint(resources.getColor(R.color.weather_date_color),
-                    Typeface.createFromAsset(asserts, resources.getString(R.string.weather_time_font)));
+                    dateFont);
+
+            mDateSuffixPaint = createTextPaint(resources.getColor(R.color.weather_date_color),
+                    dateFont);
 
             mTemperaturePaint = createTextPaint(resources.getColor(R.color.weather_temperature_color),
                     Typeface.createFromAsset(asserts, resources.getString(R.string.weather_temperature_font)));
 
             mTime = new Time();
-
         }
 
         @Override
@@ -154,32 +162,99 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
 
+            // Time
             boolean mShouldDrawColons = (System.currentTimeMillis() % 1000) < 500;
 
-            String hourString = String.valueOf(convertTo12Hour(mTime.hour));
-            String minString = String.valueOf(mTime.minute);
+            String hourString = String.format("%02d", convertTo12Hour(mTime.hour));
+            String minString = String.format("%02d", mTime.minute);
 
             float hourWidth = mTimePaint.measureText(hourString);
             float minWidth = mTimePaint.measureText(minString);
-            float x = (bounds.width() - (hourWidth + minWidth + mColonWidth)) / 2;
-            float y = ((canvas.getHeight() - mTimeOffset) / 2);
+            float radius = bounds.width() / 2;
+            float x = radius - hourWidth - mColonXOffset;
+            float y = radius - mTimeYOffset;
 
             canvas.drawText(hourString, x, y, mTimePaint);
-            x += hourWidth;
+
+            x = radius - mColonXOffset;
             if (isInAmbientMode() || mMute || mShouldDrawColons) {
                 canvas.drawText(COLON_STRING, x, y, mTimePaint);
             }
-            x += mColonWidth;
+
+            x = radius + mColonXOffset;
             canvas.drawText(minString, x, y, mTimePaint);
 
-            y += mInternalDistance - mDateOffset / 2;
+            float suffixY = y + mDateSuffixPaint.getTextSize() +
+                    mInternalDistance +
+                    mDateSuffixYOffset;
 
-            canvas.drawText("123", x, y, mDatePaint);
+            y += mDatePaint.getTextSize() + mInternalDistance + mDateYOffset;
+
+            //Date
+            String month = convertToMonth(mTime.month);
+            String day = String.valueOf(mTime.monthDay);
+            String daySuffix = GetDaySuffix(mTime.monthDay);
+
+            float monthWidth = mDatePaint.measureText(month);
+            float dayWidth = mDatePaint.measureText(day);
+            float dateWidth = monthWidth + dayWidth +
+                    mDateSuffixPaint.measureText(daySuffix);
+
+            x = radius - dateWidth / 2;
+            canvas.drawText(month, x, y, mDatePaint);
+            x += monthWidth;
+            canvas.drawText(day, x, y, mDatePaint);
+            x += dayWidth;
+            canvas.drawText(daySuffix, x, suffixY, mDateSuffixPaint);
+        }
+
+        private String GetDaySuffix(int monthDay) {
+            switch (monthDay) {
+                case 1:
+                    return "st";
+                case 2:
+                    return "nd";
+                case 3:
+                    return "rd";
+                default:
+                    return "th";
+            }
         }
 
         private int convertTo12Hour(int hour) {
             int result = hour % 12;
             return (result == 0) ? 12 : result;
+        }
+
+        private String convertToMonth(int month) {
+            switch (month) {
+                case 0:
+                    return "January ";
+                case 1:
+                    return "February ";
+                case 2:
+                    return "March ";
+                case 3:
+                    return "April ";
+                case 4:
+                    return "May ";
+                case 5:
+                    return "June ";
+                case 6:
+                    return "July ";
+                case 7:
+                    return "August ";
+                case 8:
+                    return "September ";
+                case 9:
+                    return "October ";
+                case 10:
+                    return "November ";
+                case 11:
+                    return "October ";
+                default:
+                    return "December";
+            }
         }
 
         @Override
@@ -330,16 +405,21 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             float dateTextSize = resources.getDimension(isRound ?
                     R.dimen.weather_date_size_round : R.dimen.weather_date_size);
 
+            float dateSuffixTextSize = resources.getDimension(isRound ?
+                    R.dimen.weather_date_suffix_size_round : R.dimen.weather_date_suffix_size);
+
             float tempTextSize = resources.getDimension(isRound ?
                     R.dimen.weather_temperature_size_round : R.dimen.weather_temperature_size);
 
             mTimePaint.setTextSize(timeTextSize);
             mDatePaint.setTextSize(dateTextSize);
+            mDateSuffixPaint.setTextSize(dateSuffixTextSize);
             mTemperaturePaint.setTextSize(tempTextSize);
-            mColonWidth = mTimePaint.measureText(COLON_STRING);
 
-            mTimeOffset = (mTimePaint.descent() + mTimePaint.ascent());
-            mDateOffset = (mDatePaint.descent() + mDatePaint.ascent());
+            mColonXOffset = mTimePaint.measureText(COLON_STRING) / 2;
+            mTimeYOffset = (mTimePaint.descent() + mTimePaint.ascent()) / 2;
+            mDateYOffset = (mDatePaint.descent() + mDatePaint.ascent()) / 2;
+            mDateSuffixYOffset = (mDateSuffixPaint.descent() + mDateSuffixPaint.ascent()) / 2;
         }
     }
 }
