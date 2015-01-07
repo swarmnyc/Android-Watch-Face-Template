@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="weather_bg_color">#000</color>
+    <color name="weather_time_color">#fff</color>
+    <color name="weather_date_color">#fff</color>
+    <color name="weather_temperature_color">#fff</color>
+</resources>
