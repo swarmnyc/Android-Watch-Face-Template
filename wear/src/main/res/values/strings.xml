@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">SWARM Watch Faces</string>
+    <string name="weather_time_font">fonts/Runway Caps.ttf</string>
     <string name="weather_date_font">fonts/Runway Caps.ttf</string>
-    <string name="weather_time_font">fonts/Schmalhans-ExtraBold.otf</string>
-    <string name="weather_temperature_font">fonts/Runway Caps.ttf</string>
+    <string name="weather_temperature_font">fonts/Schmalhans-ExtraBold.otf</string>
     <string name="analog_name">Clock</string>
     <string name="Weather_name">Weather</string>
 </resources>

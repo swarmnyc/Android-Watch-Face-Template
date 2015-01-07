@@ -4,4 +4,5 @@
     <color name="weather_time_color">#fff</color>
     <color name="weather_date_color">#fff</color>
     <color name="weather_temperature_color">#fff</color>
+    <color name="weather_temperature_border_color">#fff</color>
 </resources>
