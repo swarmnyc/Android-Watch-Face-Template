@@ -24,6 +24,7 @@ import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
@@ -36,37 +37,39 @@ import com.google.android.gms.wearable.Wearable;
 import java.util.TimeZone;
 
 public class WeatherWatchFaceService extends CanvasWatchFaceService {
+// ------------------------------ FIELDS ------------------------------
+
     private static final String TAG = "WeatherWatchFaceService";
+
+// -------------------------- OTHER METHODS --------------------------
 
     @Override
     public Engine onCreateEngine() {
         return new Engine();
     }
 
+// -------------------------- INNER CLASSES --------------------------
+
     private class Engine extends CanvasWatchFaceService.Engine
             implements GoogleApiClient.ConnectionCallbacks,
             GoogleApiClient.OnConnectionFailedListener,
             DataApi.DataListener,
             SensorEventListener {
+// ------------------------------ FIELDS ------------------------------
+
         static final String COLON_STRING = ":";
         static final int MSG_UPDATE_TIME = 0;
-        /**
-         * Alpha value for drawing time when in mute mode.
-         */
-        static final int MUTE_ALPHA = 100;
+
         /**
          * Update rate in milliseconds for mute mode. We update every minute, like in ambient mode.
          */
         static final long MUTE_UPDATE_RATE_MS = 1000;
         /**
-         * Alpha value for drawing time when not in mute mode.
-         */
-        static final int NORMAL_ALPHA = 255;
-        /**
          * Update rate in milliseconds for normal (not ambient and not mute) mode.
          * We update twice a second to blink the colons.
          */
         static final long NORMAL_UPDATE_RATE_MS = 500;
+        AssetManager mAsserts;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -74,6 +77,11 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTime.setToNow();
             }
         };
+        GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(WeatherWatchFaceService.this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(Wearable.API)
+                .build();
         /**
          * Handler to update the time periodically in interactive mode.
          */
@@ -93,42 +101,78 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
             }
         };
-        AssetManager mAsserts;
-        boolean isRound;
+
         Paint mBackgroundPaint;
-        float mColonXOffset;
         Paint mDatePaint;
         Paint mDateSuffixPaint;
-        float mDateSuffixYOffset;
-        float mDateYOffset;
-        GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(WeatherWatchFaceService.this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(Wearable.API)
-                .build();
-        long mInteractiveUpdateRateMs = NORMAL_UPDATE_RATE_MS;
-        float mInternalDistance;
-        boolean mLowBitAmbient;
-        boolean mMute;
-        boolean mRegisteredService = false;
-        SensorManager mSensorManager;
-        float mTemperature;
         Paint mTemperatureBorderPaint;
         Paint mTemperaturePaint;
-        Sensor mTemperatureSensor;
         Paint mTemperatureSuffixPaint;
-        float mTemperatureSuffixYOffset;
-        String mTemperatureUnit = ConverterUtil.FAHRENHEIT_STRING;
-        float mTemperatureYOffset;
-        Time mTime;
         Paint mTimePaint;
+        Resources mResources;
+        SensorManager mSensorManager;
+        Sensor mTemperatureSensor;
+        String mTemperatureUnit = ConverterUtil.FAHRENHEIT_STRING;
+        Time mTime;
+        boolean isRound;
+        boolean mLowBitAmbient;
+        boolean mRegisteredService = false;
+        float mColonXOffset;
+        float mDateSuffixYOffset;
+        float mDateYOffset;
+        float mInternalDistance;
+        float mTemperature = Float.MAX_VALUE;
+        float mTemperatureSuffixYOffset;
+        float mTemperatureYOffset;
         float mTimeXOffset;
         float mTimeYOffset;
-        Resources mResources;
+        long mInteractiveUpdateRateMs = NORMAL_UPDATE_RATE_MS;
+
+// ------------------------ INTERFACE METHODS ------------------------
+
+
+// --------------------- Interface ConnectionCallbacks ---------------------
+
+        @Override
+        public void onConnected(Bundle bundle) {
+
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+
+        }
+
+// --------------------- Interface DataListener ---------------------
+
+        @Override
+        public void onDataChanged(DataEventBuffer dataEvents) {
+
+        }
+
+// --------------------- Interface OnConnectionFailedListener ---------------------
+
+        @Override
+        public void onConnectionFailed(ConnectionResult connectionResult) {
+
+        }
+
+// --------------------- Interface SensorEventListener ---------------------
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            if (mTemperatureUnit == ConverterUtil.CELSIUS_STRING) {
+                mTemperature = event.values[0];
+            } else {
+                mTemperature = ConverterUtil.convertCelsiusToFahrenheit(event.values[0]);
+            }
+        }
 
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
+
+// -------------------------- OTHER METHODS --------------------------
 
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
@@ -191,21 +235,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         }
 
         @Override
-        public void onConnected(Bundle bundle) {
-
-        }
-
-        @Override
-        public void onConnectionFailed(ConnectionResult connectionResult) {
-
-        }
-
-        @Override
-        public void onConnectionSuspended(int i) {
-
-        }
-
-        @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
@@ -246,11 +275,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         }
 
         @Override
-        public void onDataChanged(DataEventBuffer dataEvents) {
-
-        }
-
-        @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
             super.onDestroy();
@@ -267,11 +291,12 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
 
             // photo
-            Drawable b = mResources.getDrawable(R.drawable.weather_sunny);
+            Drawable b = mResources.getDrawable(isInAmbientMode() ? R.drawable.weather_sunny_gray : R.drawable.weather_sunny);
             Bitmap bb = ((BitmapDrawable) b).getBitmap();
             float sizeScale = (width * 0.5f) / bb.getWidth();
             bb = Bitmap.createScaledBitmap(bb, (int) (bb.getWidth() * sizeScale), (int) (bb.getHeight() * sizeScale), true);
             canvas.drawBitmap(bb, radius - bb.getWidth() / 2, 0, null);
+
 
             // Time
             boolean mShouldDrawColons = (System.currentTimeMillis() % 1000) < 500;
@@ -280,9 +305,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             String minString = String.format("%02d", mTime.minute);
 
             //Test number
-            hourString = "11";
-            minString = "23";
-            mTemperature = 50;
+            //hourString = "07";
+            //minString = "30";
+            //mTemperature = 50;
 
             float hourWidth = mTimePaint.measureText(hourString);
 
@@ -293,7 +318,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawText(hourString, x, y, mTimePaint);
 
             x = radius - mColonXOffset + mTimeXOffset;
-            if (isInAmbientMode() || mMute || mShouldDrawColons) {
+            if (isInAmbientMode() || mShouldDrawColons) {
                 canvas.drawText(COLON_STRING, x, y, mTimePaint);
             }
 
@@ -324,52 +349,42 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawText(daySuffixString, x, suffixY, mDateSuffixPaint);
 
             //temperature
-            String temperatureString = String.valueOf((int) mTemperature);
-            float temperatureWidth = mTemperaturePaint.measureText(temperatureString);
-            float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(mTemperatureUnit)) / 2;
-            float borderPadding = temperatureRadius * 0.5f;
-            x = radius;
-            y = bounds.height() * 0.80f;
-            suffixY = y - mTemperatureSuffixYOffset;
-            canvas.drawCircle(radius, y + borderPadding / 2, temperatureRadius + borderPadding, mTemperatureBorderPaint);
+            if (mTemperature != Float.MAX_VALUE) {
+                String temperatureString = String.valueOf((int) mTemperature);
+                float temperatureWidth = mTemperaturePaint.measureText(temperatureString);
+                float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(mTemperatureUnit)) / 2;
+                float borderPadding = temperatureRadius * 0.5f;
+                x = radius;
+                y = bounds.height() * 0.80f;
+                suffixY = y - mTemperatureSuffixYOffset;
+                canvas.drawCircle(radius, y + borderPadding / 2, temperatureRadius + borderPadding, mTemperatureBorderPaint);
 
-            x -= temperatureRadius;
-            y -= mTemperatureYOffset;
-            canvas.drawText(temperatureString, x, y, mTemperaturePaint);
-            x += temperatureWidth;
-            canvas.drawText(mTemperatureUnit, x, suffixY, mTemperatureSuffixPaint);
+                x -= temperatureRadius;
+                y -= mTemperatureYOffset;
+                canvas.drawText(temperatureString, x, y, mTemperaturePaint);
+                x += temperatureWidth;
+                canvas.drawText(mTemperatureUnit, x, suffixY, mTemperatureSuffixPaint);
+            }
         }
 
         @Override
         public void onInterruptionFilterChanged(int interruptionFilter) {
             super.onInterruptionFilterChanged(interruptionFilter);
+
+            log("onInterruptionFilterChanged: " + interruptionFilter);
+
+
             boolean inMuteMode = interruptionFilter == WatchFaceService.INTERRUPTION_FILTER_NONE;
             // We only need to update once a minute in mute mode.
             setInteractiveUpdateRateMs(inMuteMode ? MUTE_UPDATE_RATE_MS : NORMAL_UPDATE_RATE_MS);
-
-            if (mMute != inMuteMode) {
-                mMute = inMuteMode;
-                int alpha = inMuteMode ? MUTE_ALPHA : NORMAL_ALPHA;
-                mTimePaint.setAlpha(alpha);
-                mDatePaint.setAlpha(alpha);
-                mTemperaturePaint.setAlpha(alpha);
-                invalidate();
-            }
         }
 
         @Override
         public void onPropertiesChanged(Bundle properties) {
             super.onPropertiesChanged(properties);
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
-        }
 
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            if (mTemperatureUnit == ConverterUtil.CELSIUS_STRING) {
-                mTemperature = event.values[0];
-            } else {
-                mTemperature = ConverterUtil.convertCelsiusToFahrenheit(event.values[0]);
-            }
+            log("onPropertiesChanged: LowBitAmbient=" + mLowBitAmbient);
         }
 
         @Override
@@ -381,6 +396,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
+
+            log("onVisibilityChanged: " + visible);
+
 
             if (visible) {
                 mGoogleApiClient.connect();
@@ -404,9 +422,12 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             updateTimer();
         }
 
-        private int convertTo12Hour(int hour) {
-            int result = hour % 12;
-            return (result == 0) ? 12 : result;
+        private Paint createTextPaint(int color, Typeface typeface) {
+            Paint paint = new Paint();
+            paint.setColor(color);
+            paint.setTypeface(typeface);
+            paint.setAntiAlias(true);
+            return paint;
         }
 
         private String convertToMonth(int month) {
@@ -440,14 +461,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         }
 
-        private Paint createTextPaint(int color, Typeface typeface) {
-            Paint paint = new Paint();
-            paint.setColor(color);
-            paint.setTypeface(typeface);
-            paint.setAntiAlias(true);
-            return paint;
-        }
-
         private String getDaySuffix(int monthDay) {
             switch (monthDay) {
                 case 1:
@@ -459,6 +472,15 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 default:
                     return "th";
             }
+        }
+
+        private boolean shouldTimerBeRunning() {
+            return isVisible() && !isInAmbientMode();
+        }
+
+        private int convertTo12Hour(int hour) {
+            int result = hour % 12;
+            return (result == 0) ? 12 : result;
         }
 
         private void registerService() {
@@ -473,7 +495,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             WeatherWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
 
             //Temperature
-            mSensorManager.registerListener(this, mTemperatureSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            if (mTemperatureSensor != null)
+                mSensorManager.registerListener(this, mTemperatureSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
 
         private void setInteractiveUpdateRateMs(long updateRateMs) {
@@ -488,10 +511,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         }
 
-        private boolean shouldTimerBeRunning() {
-            return isVisible() && !isInAmbientMode();
-        }
-
         private void unregisterService() {
             if (!mRegisteredService) {
                 return;
@@ -502,13 +521,20 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             WeatherWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
 
             //Temperature
-            mSensorManager.unregisterListener(this);
+            if (mTemperatureSensor != null)
+                mSensorManager.unregisterListener(this);
         }
 
         private void updateTimer() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
             if (shouldTimerBeRunning()) {
                 mUpdateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME);
+            }
+        }
+
+        private void log(String message) {
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, message);
             }
         }
     }

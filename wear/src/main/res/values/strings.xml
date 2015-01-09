@@ -3,6 +3,6 @@
     <string name="weather_time_font">fonts/Runway Caps.ttf</string>
     <string name="weather_date_font">fonts/Runway Caps.ttf</string>
     <string name="weather_temperature_font">fonts/Schmalhans-ExtraBold.otf</string>
-    <string name="analog_name">Clock</string>
-    <string name="Weather_name">Weather</string>
+    <string name="analog_name">SWARM Clock</string>
+    <string name="Weather_name">SWARM Weather</string>
 </resources>
