@@ -134,6 +134,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         int mTemperatureScale;
         int mBackgroundColor;
         int mBackgroundDefaultColor;
+        String mWeatherConditionResourceName;
+        Bitmap mWeatherConditionBrawable;
 
 // ------------------------ INTERFACE METHODS ------------------------
 
@@ -318,26 +320,37 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             int height = bounds.height();
             float radius = width / 2;
 
-            canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
+            canvas.drawRect(0, 0, width, height, mBackgroundPaint);
 
             // photo
             if (!TextUtils.isEmpty(mWeatherCondition)) {
-                //TODO: Change to better code
-                String name;
-                if (mWeatherCondition.equals("cloudy") || mWeatherCondition.equals("clear")) {
-                    //cloudy and clear have night picture
-                    name = "weather_" + mWeatherCondition + (mTime.hour <= 6 || mTime.hour >= 18 ? "night" : "");
-                } else {
-                    name = "weather_" + mWeatherCondition;
-                }
-                //log(name);
-                int id = mResources.getIdentifier(name + (this.isInAmbientMode() ? "_gray" : ""), "drawable", WeatherWatchFaceService.class.getPackage().getName());
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append("weather_");
+                stringBuilder.append(mWeatherCondition);
 
-                Drawable b = mResources.getDrawable(id);
-                Bitmap bb = ((BitmapDrawable) b).getBitmap();
-                float sizeScale = (width * 0.5f) / bb.getWidth();
-                bb = Bitmap.createScaledBitmap(bb, (int) (bb.getWidth() * sizeScale), (int) (bb.getHeight() * sizeScale), true);
-                canvas.drawBitmap(bb, radius - bb.getWidth() / 2, 0, null);
+                //TODO: Get NightTime and DayTime
+                if ((mWeatherCondition.equals("cloudy") || mWeatherCondition.equals("clear")) && (mTime.hour <= 6 || mTime.hour >= 18)) {
+                    //cloudy and clear have night picture
+                    stringBuilder.append("night");
+                }
+
+                if (this.isInAmbientMode()){
+                    stringBuilder.append("_gray");
+                }
+
+                String name = stringBuilder.toString();
+                if (!name.equals(mWeatherConditionResourceName)){
+                    log("CreateScaledBitmap: " + name);
+                    mWeatherConditionResourceName=name;
+                    int id = mResources.getIdentifier(name, "drawable", WeatherWatchFaceService.class.getPackage().getName());
+
+                    Drawable b = mResources.getDrawable(id);
+                    mWeatherConditionBrawable = ((BitmapDrawable) b).getBitmap();
+                    float sizeScale = (width * 0.5f) / mWeatherConditionBrawable.getWidth();
+                    mWeatherConditionBrawable = Bitmap.createScaledBitmap(mWeatherConditionBrawable, (int) (mWeatherConditionBrawable.getWidth() * sizeScale), (int) (mWeatherConditionBrawable.getHeight() * sizeScale), true);
+                }
+
+                canvas.drawBitmap(mWeatherConditionBrawable, radius - mWeatherConditionBrawable.getWidth() / 2, 0, null);
             }
 
             // Time
