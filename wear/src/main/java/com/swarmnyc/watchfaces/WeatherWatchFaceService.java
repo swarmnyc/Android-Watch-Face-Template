@@ -13,11 +13,6 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -39,6 +34,8 @@ import com.google.android.gms.wearable.DataItem;
 import com.google.android.gms.wearable.DataItemBuffer;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
@@ -61,8 +58,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
     private class Engine extends CanvasWatchFaceService.Engine
             implements GoogleApiClient.ConnectionCallbacks,
             GoogleApiClient.OnConnectionFailedListener,
-            DataApi.DataListener,
-            SensorEventListener {
+            DataApi.DataListener/*,
+            NodeApi.NodeListener*/ {
 // ------------------------------ FIELDS ------------------------------
 
         static final String COLON_STRING = ":";
@@ -86,6 +83,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 .addOnConnectionFailedListener(this)
                 .addApi(Wearable.API)
                 .build();
+
         /**
          * Handler to update the time periodically in interactive mode.
          */
@@ -99,6 +97,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                             long timeMs = System.currentTimeMillis();
                             long delayMs =
                                     UPDATE_RATE_MS - (timeMs % UPDATE_RATE_MS);
+                            //log("UpdateDelayed: " + delayMs);
                             mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
                         }
                         break;
@@ -114,13 +113,12 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         Paint mTemperatureSuffixPaint;
         Paint mTimePaint;
         Resources mResources;
-        SensorManager mSensorManager;
-        Sensor mTemperatureSensor;
         String mNodeId = "SWARM WatchFaces";
         String mTemperatureUnit = ConverterUtil.FAHRENHEIT_STRING;
         String mWeatherCondition;
         Time mTime;
         boolean isRound;
+        boolean mGotConfig;
         boolean mLowBitAmbient;
         boolean mRegisteredService = false;
         float mColonXOffset;
@@ -132,7 +130,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         float mTemperatureYOffset;
         float mTimeXOffset;
         float mTimeYOffset;
-        boolean mGotConfig;
 
 // ------------------------ INTERFACE METHODS ------------------------
 
@@ -142,9 +139,17 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onConnected(Bundle bundle) {
             log("Connected: " + bundle);
-            Wearable.DataApi.addListener(mGoogleApiClient, Engine.this);
-
             getConfig();
+            Wearable.DataApi.addListener(mGoogleApiClient, this);
+            //Wearable.NodeApi.addListener(mGoogleApiClient, this);
+
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, mNodeId, "/WeatherService/Start", null)
+                    .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                            log("SendStartMessage:" + sendMessageResult.getStatus());
+                        }
+                    });
         }
 
         @Override
@@ -156,9 +161,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onDataChanged(DataEventBuffer dataEvents) {
-            log("DataChanged");
-
-            for (DataEvent event : dataEvents) {
+           for (DataEvent event : dataEvents) {
                 DataMapItem item = DataMapItem.fromDataItem(event.getDataItem());
                 DataMap config = item.getDataMap();
 
@@ -168,26 +171,26 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         }
 
+// --------------------- Interface NodeListener ---------------------
+
+
+        /*@Override
+        public void onPeerConnected(Node node) {
+            mNodeId = node.getId();
+            log("PeerConnected :" + mNodeId);
+
+            //Wearable.MessageApi.sendMessage(mGoogleApiClient, mNodeId, "/WeatherService/Start", null);
+        }
+
+        @Override
+        public void onPeerDisconnected(Node node) {
+        }*/
+
 // --------------------- Interface OnConnectionFailedListener ---------------------
 
         @Override
         public void onConnectionFailed(ConnectionResult connectionResult) {
             log("ConnectionFailed");
-        }
-
-// --------------------- Interface SensorEventListener ---------------------
-
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            if (mTemperatureUnit == ConverterUtil.CELSIUS_STRING) {
-                mTemperature = event.values[0];
-            } else {
-                mTemperature = ConverterUtil.convertCelsiusToFahrenheit(event.values[0]);
-            }
-        }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
 
 // -------------------------- OTHER METHODS --------------------------
@@ -263,11 +266,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     .setShowSystemUiTime(false)
                     .build());
 
-            // Get an instance of the sensor service, and use that to get an instance of
-            // a particular sensor.
-            mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-            mTemperatureSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
-
             mResources = WeatherWatchFaceService.this.getResources();
             mAsserts = WeatherWatchFaceService.this.getAssets();
 
@@ -291,17 +289,24 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mTemperatureSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
 
             mTime = new Time();
+
+            mGoogleApiClient.connect();
         }
 
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+                Wearable.DataApi.removeListener(mGoogleApiClient, this);
+                //Wearable.NodeApi.removeListener(mGoogleApiClient, this);
+                mGoogleApiClient.disconnect();
+            }
             super.onDestroy();
         }
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-            log("Draw");
+            //log("Draw");
             mTime.setToNow();
 
             int width = bounds.width();
@@ -320,7 +325,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 } else {
                     name = mWeatherCondition;
                 }
-
+                //log(name);
                 int id = mResources.getIdentifier(name + (this.isInAmbientMode() ? "_gray" : ""), "drawable", WeatherWatchFaceService.class.getPackage().getName());
 
                 Drawable b = mResources.getDrawable(id);
@@ -406,6 +411,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             super.onInterruptionFilterChanged(interruptionFilter);
 
             log("onInterruptionFilterChanged: " + interruptionFilter);
+
+            //TODO: to understand onInterruptionFilterChanged
             //boolean inMuteMode = interruptionFilter == WatchFaceService.INTERRUPTION_FILTER_NONE;
         }
 
@@ -432,20 +439,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
 
             if (visible) {
-                mGoogleApiClient.connect();
-
-                registerService();
+                registerTimeZoneService();
 
                 // Update time zone in case it changed while we weren't visible.
                 mTime.clear(TimeZone.getDefault().getID());
                 mTime.setToNow();
             } else {
-                unregisterService();
-
-                if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
-                    Wearable.DataApi.removeListener(mGoogleApiClient, this);
-                    mGoogleApiClient.disconnect();
-                }
+                unregisterTimeZoneService();
             }
 
             // Whether the timer should be running depends on whether we're visible (as well as
@@ -456,7 +456,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private Paint createTextPaint(int color, Typeface typeface) {
             Paint paint = new Paint();
             paint.setColor(color);
-            paint.setTypeface(typeface);
+            if (typeface != null)
+                paint.setTypeface(typeface);
             paint.setAntiAlias(true);
             return paint;
         }
@@ -514,64 +515,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             return (result == 0) ? 12 : result;
         }
 
-        private void getConfig() {
-           /* if (mGotConfig){
-                return;
-            }*/
-
-            Wearable.NodeApi.getLocalNode(mGoogleApiClient).setResultCallback(new ResultCallback<NodeApi.GetLocalNodeResult>() {
-                @Override
-                public void onResult(NodeApi.GetLocalNodeResult getLocalNodeResult) {
-                    String localNode = getLocalNodeResult.getNode().getId();
-                    Uri uri = new Uri.Builder()
-                            .scheme("wear")
-                            .path("/WeatherWatchFace")
-                            .authority(localNode)
-                            .build();
-
-
-                    /*Wearable.DataApi.getDataItem(mGoogleApiClient, uri).setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
-                        @Override
-                        public void onResult(DataApi.DataItemResult dataItemResult) {
-                            log("GotConfig");
-                            if (dataItemResult.getStatus().isSuccess()) {
-                                mGotConfig = true;
-                                if (dataItemResult.getDataItem() != null) {
-                                    DataItem configDataItem = dataItemResult.getDataItem();
-                                    DataMapItem dataMapItem = DataMapItem.fromDataItem(configDataItem);
-                                    DataMap config = dataMapItem.getDataMap();
-                                    fetchConfig(config);
-                                }
-                            }
-                        }
-                    });*/
-
-                    Wearable.DataApi.getDataItems(mGoogleApiClient).setResultCallback(new ResultCallback<DataItemBuffer>() {
-                        @Override
-                        public void onResult(DataItemBuffer dataItems) {
-                            //TODO: To Find out why uri is different
-                            if (dataItems.getStatus().isSuccess()) {
-                                for (DataItem item : dataItems) {
-                                    if (item.getUri().getPath().endsWith("/WeatherWatchFace")) {
-                                        fetchConfig(DataMapItem.fromDataItem(item).getDataMap());
-                                    }
-                                }
-                            }
-
-                            dataItems.release();
-                        }
-                    });
-                }
-            });
-        }
-
-        private void log(String message) {
-            //if (Log.isLoggable(TAG, Log.DEBUG))
-            //{
-            Log.d(TAG, message);
-            //}
-        }
-
         private void fetchConfig(DataMap config) {
             if (config.containsKey("Temperature")) {
                 mTemperature = config.getInt("Temperature");
@@ -587,7 +530,36 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         }
 
-        private void registerService() {
+        private void getConfig() {
+            if (mGotConfig) {
+                return;
+            }
+
+            Wearable.DataApi.getDataItems(mGoogleApiClient).setResultCallback(new ResultCallback<DataItemBuffer>() {
+                @Override
+                public void onResult(DataItemBuffer dataItems) {
+                    //TODO: To Find out why uri is different
+                    if (dataItems.getStatus().isSuccess()) {
+                        for (DataItem item : dataItems) {
+                            if (item.getUri().getPath().endsWith("/WeatherWatchFace")) {
+                                fetchConfig(DataMapItem.fromDataItem(item).getDataMap());
+                            }
+                        }
+                    }
+
+                    dataItems.release();
+                }
+            });
+        }
+
+        private void log(String message) {
+            //if (Log.isLoggable(TAG, Log.DEBUG))
+            //{
+            Log.d(TAG, message);
+            //}
+        }
+
+        private void registerTimeZoneService() {
             //TimeZone and TemperatureSensor
             if (mRegisteredService) {
                 return;
@@ -598,13 +570,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             // TimeZone
             IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
             WeatherWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
-
-            //Temperature
-            if (mTemperatureSensor != null)
-                mSensorManager.registerListener(this, mTemperatureSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
 
-        private void unregisterService() {
+        private void unregisterTimeZoneService() {
             if (!mRegisteredService) {
                 return;
             }
@@ -612,10 +580,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             //TimeZone
             WeatherWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
-
-            //Temperature
-            if (mTemperatureSensor != null)
-                mSensorManager.unregisterListener(this);
         }
 
         private void updateTimer() {
