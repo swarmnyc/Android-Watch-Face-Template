@@ -2,78 +2,86 @@ package com.swarmnyc.watchfaces;
 
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.res.Resources;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
-import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 import com.swarmnyc.watchfaces.weather.ISimpleWeatherApi;
 import com.swarmnyc.watchfaces.weather.WeatherInfo;
 import com.swarmnyc.watchfaces.weather.openweather.OpenWeatherApi;
 
-public class WeatherService extends WearableListenerService {
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class WeatherService extends WearableListenerService
+        implements LocationListener {
+// ------------------------------ FIELDS ------------------------------
+
+    public static final String PATH_CONFIG = "/WeatherWatchFace";
     private static final String TAG = "WeatherService";
     private GoogleApiClient mGoogleApiClient;
-    //private String mPeerId;
-    private Handler mRunner = new Runner();
+    private LocationManager mLocationManager;
     private Location mLocation;
+    private String mPeerId;
+    private Timer mTimer;
 
+// ------------------------ INTERFACE METHODS ------------------------
+
+
+// --------------------- Interface LocationListener ---------------------
 
     @Override
-    public void onCreate() {
-        super.onCreate();
-        Log.d(TAG, "onCreate");
+    public void onLocationChanged(Location location) {
+        Log.d(TAG, "onLocationChanged: " + location);
+        mLocation = location;
 
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Wearable.API)
-                .build();
+        if (mTimer == null) {
+            int interval = WeatherService.this.getResources().getInteger(R.integer.WeatherServiceInterval);
+            Log.d("TAG","Task Interval:" + interval);
+            mTimer = new Timer();
+            mTimer.scheduleAtFixedRate(new Task(), 0, interval);
+        }
     }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        Log.d(TAG, "onLocationStatusChanged: " + provider);
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        Log.d(TAG, "onLocationProviderEnabled: " + provider);
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        Log.d(TAG, "onLocationProviderDisabled: " + provider);
+    }
+
+// --------------------- Interface MessageListener ---------------------
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
         super.onMessageReceived(messageEvent);
         Log.d(TAG, "MessageReceived: " + messageEvent.getPath());
-        if (messageEvent.getPath().equals("/WeatherService/Start")) {
+        /*if (messageEvent.getPath().equals("/WeatherService/Start")) {
             mRunner.sendEmptyMessage(0);
-        }
-
-        LocationManager locationManager = (LocationManager) WeatherService.this.getSystemService(Context.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                Log.d(TAG, "onLocationChanged: " + location);
-                mLocation = location;
-            }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-        });
+        }*/
     }
+
+// --------------------- Interface NodeListener ---------------------
 
     @Override
     public void onPeerConnected(Node peer) {
@@ -81,93 +89,87 @@ public class WeatherService extends WearableListenerService {
 
         Log.d(TAG, "Connected: " + peer.getId());
         mPeerId = peer.getId();
-
-       /* //Wearable.DataApi.addListener(mGoogleApiClient, this);
-
-        if (!mGoogleApiClient.isConnected()){
-            Log.d(TAG,"Start Connect");
-            mGoogleApiClient.connect();
-        }*/
+        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
     }
 
     @Override
     public void onPeerDisconnected(Node peer) {
         Log.d(TAG, "Disconnected");
 
-        /*if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
-            Log.d(TAG,"Start Disconnect");
-            Wearable.MessageApi.removeListener(mGoogleApiClient, this);
-            Wearable.DataApi.removeListener(mGoogleApiClient, this);
-            mGoogleApiClient.disconnect();
-        }*/
+        if (mLocationManager != null) {
+            mLocationManager.removeUpdates(this);
+        }
 
-        if (mRunner != null) {
-            mRunner.removeMessages(0);
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
         }
 
         super.onPeerDisconnected(peer);
     }
 
-    private class Runner extends Handler {
+// -------------------------- OTHER METHODS --------------------------
 
-        @Override
-        public void handleMessage(Message msg) {
-            //super.handleMessage(msg);
-            Log.d(TAG, "Running: " + msg);
-
-            if (msg.what != 0)
-                return;
-
-            if (mLocation == null) {
-                Log.d(TAG, "no location");
-            }else {
-                new HttpAsync().execute();
-            }
-
-            //real
-            //this.sendEmptyMessageDelayed(0, 60 * 60 * 1000);
-
-            //test
-            this.sendEmptyMessageDelayed(0, 20000);
-        }
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_STICKY;
     }
 
-    private class HttpAsync extends AsyncTask{
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Log.d(TAG, "onCreate");
+
+        mLocationManager = (LocationManager) WeatherService.this.getSystemService(Context.LOCATION_SERVICE);
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .build();
+    }
+
+// -------------------------- INNER CLASSES --------------------------
+
+    private class Task extends TimerTask {
+// ------------------------ INTERFACE METHODS ------------------------
+
+
+// --------------------- Interface Runnable ---------------------
+
         @Override
-        protected Object doInBackground(Object[] params) {
+        public void run() {
             try {
-                if (!mGoogleApiClient.isConnected())
-                    mGoogleApiClient.connect();
+                Log.d(TAG, "Task Running");
 
-                ISimpleWeatherApi api = new OpenWeatherApi();
-                api.setContext(WeatherService.this.getApplicationContext());
+                if (mLocation == null) {
+                    Log.d(TAG, "Task : No location");
+                } else {
+                    if (!mGoogleApiClient.isConnected())
+                        mGoogleApiClient.connect();
 
-                WeatherInfo info = api.getCurrentWeatherInfo(mLocation.getLatitude(), mLocation.getLongitude(), true);
+                    ISimpleWeatherApi api = new OpenWeatherApi();
+                    api.setContext(WeatherService.this.getApplicationContext());
 
-                PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/WeatherWatchFace");
-                DataMap config = putDataMapRequest.getDataMap();
+                    DataMap config = new DataMap();
+                    WeatherInfo info = api.getCurrentWeatherInfo(mLocation.getLatitude(), mLocation.getLongitude(), true);
 
-                //real
-                config.putInt("Temperature", info.getTemperature());
-                config.putString("Condition", info.getCondition());
+                    //real
+                    config.putInt("Temperature", info.getTemperature());
+                    config.putString("Condition", info.getCondition());
 
-                //test
-                //Random random = new Random();
-                //config.putInt("Temperature",random.nextInt(100));
-                //config.putString("Condition", new String[]{"clear","rain","snow","thunder","cloudy"}[random.nextInt(4)]);
+                    //test
+                    //Random random = new Random();
+                    //config.putInt("Temperature",random.nextInt(100));
+                    //config.putString("Condition", new String[]{"clear","rain","snow","thunder","cloudy"}[random.nextInt(4)]);
 
-                Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapRequest.asPutDataRequest())
-                        .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
-                            @Override
-                            public void onResult(DataApi.DataItemResult dataItemResult) {
-                                Log.d(TAG, "putDataItem Uri: " + dataItemResult.getDataItem().getUri());
-                                Log.d(TAG, "putDataItem result status: " + dataItemResult.getStatus());
-                            }
-                        });
+                    Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                            Log.d(TAG, "sendUpdateMessage: " + sendMessageResult.getStatus());
+                        }
+                    });
+                }
             } catch (Exception e) {
-                Log.d(TAG, "Fail:" + e);
+                Log.d(TAG, "Task Fail:" + e);
             }
-            return null;
         }
     }
 }

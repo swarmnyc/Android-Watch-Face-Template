@@ -5,5 +5,6 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="openweather_appid">0646bea53ea069b85519591936d638b7</string>
+    <string name="title_activity_weather_watch_face_config">Config</string>
 
 </resources>
