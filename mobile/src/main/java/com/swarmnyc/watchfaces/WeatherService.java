@@ -1,6 +1,12 @@
 package com.swarmnyc.watchfaces;
 
 
+import android.content.Context;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -15,15 +21,15 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 import com.swarmnyc.watchfaces.weather.ISimpleWeatherApi;
+import com.swarmnyc.watchfaces.weather.WeatherInfo;
 import com.swarmnyc.watchfaces.weather.openweather.OpenWeatherApi;
-
-import java.util.Random;
 
 public class WeatherService extends WearableListenerService {
     private static final String TAG = "WeatherService";
     private GoogleApiClient mGoogleApiClient;
-    private String mPeerId;
+    //private String mPeerId;
     private Handler mRunner = new Runner();
+    private Location mLocation;
 
 
     @Override
@@ -43,14 +49,38 @@ public class WeatherService extends WearableListenerService {
         if (messageEvent.getPath().equals("/WeatherService/Start")) {
             mRunner.sendEmptyMessage(0);
         }
+
+        LocationManager locationManager = (LocationManager) WeatherService.this.getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                Log.d(TAG, "onLocationChanged: " + location);
+                mLocation = location;
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+
+            }
+        });
     }
 
     @Override
     public void onPeerConnected(Node peer) {
         super.onPeerConnected(peer);
 
+        Log.d(TAG, "Connected: " + peer.getId());
         mPeerId = peer.getId();
-        Log.d(TAG, "Connected: " + mPeerId);
 
        /* //Wearable.DataApi.addListener(mGoogleApiClient, this);
 
@@ -85,10 +115,26 @@ public class WeatherService extends WearableListenerService {
             //super.handleMessage(msg);
             Log.d(TAG, "Running: " + msg);
 
-            if (msg.what!=0)
+            if (msg.what != 0)
                 return;
 
+            if (mLocation == null) {
+                Log.d(TAG, "no location");
+            }else {
+                new HttpAsync().execute();
+            }
 
+            //real
+            //this.sendEmptyMessageDelayed(0, 60 * 60 * 1000);
+
+            //test
+            this.sendEmptyMessageDelayed(0, 20000);
+        }
+    }
+
+    private class HttpAsync extends AsyncTask{
+        @Override
+        protected Object doInBackground(Object[] params) {
             try {
                 if (!mGoogleApiClient.isConnected())
                     mGoogleApiClient.connect();
@@ -96,21 +142,19 @@ public class WeatherService extends WearableListenerService {
                 ISimpleWeatherApi api = new OpenWeatherApi();
                 api.setContext(WeatherService.this.getApplicationContext());
 
-                //TODO: GET GeoInfo
-                //WeatherInfo info = api.getCurrentWeatherInfo(40.71, -74.01, true);
+                WeatherInfo info = api.getCurrentWeatherInfo(mLocation.getLatitude(), mLocation.getLongitude(), true);
 
                 PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/WeatherWatchFace");
                 DataMap config = putDataMapRequest.getDataMap();
 
                 //real
-                //config.putInt("Temperature", info.getTemperature());
-                //config.putString("Condition", info.getCondition());
+                config.putInt("Temperature", info.getTemperature());
+                config.putString("Condition", info.getCondition());
 
                 //test
-                Random random = new Random();
-                config.putInt("Temperature",random.nextInt(100));
-                config.putString("Condition", new String[]{"clear","rain","snow","thunder","cloudy"}[random.nextInt(4)]);
-
+                //Random random = new Random();
+                //config.putInt("Temperature",random.nextInt(100));
+                //config.putString("Condition", new String[]{"clear","rain","snow","thunder","cloudy"}[random.nextInt(4)]);
 
                 Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapRequest.asPutDataRequest())
                         .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
@@ -123,12 +167,7 @@ public class WeatherService extends WearableListenerService {
             } catch (Exception e) {
                 Log.d(TAG, "Fail:" + e);
             }
-
-            //real
-            //this.sendEmptyMessageDelayed(0, 60 * 60 * 1000);
-
-            //test
-            this.sendEmptyMessageDelayed(0, 10000);
+            return null;
         }
     }
 }
