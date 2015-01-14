@@ -57,8 +57,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             implements GoogleApiClient.ConnectionCallbacks,
             GoogleApiClient.OnConnectionFailedListener,
             MessageApi.MessageListener {
-        // ------------------------------ FIELDS ------------------------------
+// ------------------------------ FIELDS ------------------------------
 
+        public static final String CONFIG_BACKGROUND_COLOR = "BackgroundColor";
+        public static final String CONFIG_CONDITION = "Condition";
+        public static final String CONFIG_TEMPERATURE = "Temperature";
+        public static final String CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
+        public static final String PATH_CONFIG = "/WeatherWatchFace";
         static final String COLON_STRING = ":";
         static final int MSG_UPDATE_TIME = 0;
 
@@ -67,10 +72,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
          * We update twice a second to blink the colons.
          */
         static final long UPDATE_RATE_MS = 500;
-        public static final String CONFIG_CONDITION = "Condition";
-        public static final String CONFIG_TEMPERATURE = "Temperature";
-        public static final String CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
-        public static final String PATH_CONFIG = "/WeatherWatchFace";
+
         AssetManager mAsserts;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
@@ -124,12 +126,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         float mDateSuffixYOffset;
         float mDateYOffset;
         float mInternalDistance;
-        int mTemperature = Integer.MAX_VALUE;
         float mTemperatureSuffixYOffset;
         float mTemperatureYOffset;
         float mTimeXOffset;
         float mTimeYOffset;
+        int mTemperature = Integer.MAX_VALUE;
         int mTemperatureScale;
+        int mBackgroundColor;
+        int mBackgroundDefaultColor;
 
 // ------------------------ INTERFACE METHODS ------------------------
 
@@ -182,6 +186,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
+            log("onAmbientModeChanged: " + inAmbientMode);
 
             if (mLowBitAmbient) {
                 boolean antiAlias = !inAmbientMode;
@@ -190,6 +195,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTemperaturePaint.setAntiAlias(antiAlias);
                 mTemperatureBorderPaint.setAntiAlias(antiAlias);
             }
+
+            if (inAmbientMode){
+                mBackgroundPaint.setColor(mBackgroundDefaultColor);
+            }else{
+                mBackgroundPaint.setColor(mBackgroundColor);
+            }
+
+
             invalidate();
 
             // Whether the timer should be running depends on whether we're in ambient mode (as well
@@ -252,8 +265,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mResources = WeatherWatchFaceService.this.getResources();
             mAsserts = WeatherWatchFaceService.this.getAssets();
 
+            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.weather_bg_color);
             mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(mResources.getColor(R.color.weather_bg_color));
+            mBackgroundPaint.setColor(mBackgroundDefaultColor);
 
             mTemperatureBorderPaint = new Paint();
             mTemperatureBorderPaint.setStyle(Paint.Style.STROKE);
@@ -379,11 +393,11 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawText(daySuffixString, x, suffixY, mDateSuffixPaint);
 
             //temperature
-            if (mTemperature != Float.MAX_VALUE) {
-                String temperatureString = String.valueOf((int) mTemperature);
-                String temperatureUnitString = mTemperatureScale == ConverterUtil.FAHRENHEIT ? ConverterUtil.FAHRENHEIT_STRING : ConverterUtil.CELSIUS_STRING;
+            if (mTemperature != Integer.MAX_VALUE) {
+                String temperatureString = String.valueOf(mTemperature);
+                String temperatureScaleString = mTemperatureScale == ConverterUtil.FAHRENHEIT ? ConverterUtil.FAHRENHEIT_STRING : ConverterUtil.CELSIUS_STRING;
                 float temperatureWidth = mTemperaturePaint.measureText(temperatureString);
-                float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(temperatureUnitString)) / 2;
+                float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(temperatureScaleString)) / 2;
                 float borderPadding = temperatureRadius * 0.5f;
                 x = radius;
                 y = bounds.height() * 0.80f;
@@ -394,7 +408,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 y -= mTemperatureYOffset;
                 canvas.drawText(temperatureString, x, y, mTemperaturePaint);
                 x += temperatureWidth;
-                canvas.drawText(temperatureUnitString, x, suffixY, mTemperatureSuffixPaint);
+                canvas.drawText(temperatureScaleString, x, suffixY, mTemperatureSuffixPaint);
             }
         }
 
@@ -546,6 +560,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTemperatureScale = scale;
             }
 
+            if (config.containsKey(CONFIG_BACKGROUND_COLOR)) {
+                mBackgroundColor = config.getInt(CONFIG_BACKGROUND_COLOR);
+                if (!isInAmbientMode()){
+                    mBackgroundPaint.setColor(mBackgroundColor);
+                }
+            }
+
             invalidate();
         }
 
@@ -603,9 +624,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             //real
 
-            config.putInt(CONFIG_TEMPERATURE,  mTemperature);
+
             config.putString(CONFIG_CONDITION, mWeatherCondition);
             config.putInt(CONFIG_TEMPERATURE_SCALE, mTemperatureScale);
+            config.putInt(CONFIG_BACKGROUND_COLOR, mBackgroundColor);
+
+            if (mTemperature!= Integer.MAX_VALUE){
+                config.putInt(CONFIG_TEMPERATURE,  mTemperature);
+            }
 
             Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapRequest.asPutDataRequest())
                     .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {

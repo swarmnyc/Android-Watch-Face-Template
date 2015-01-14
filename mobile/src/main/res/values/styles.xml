@@ -1,6 +1,6 @@
 <resources>
 
-    <style name="Theme.Base" parent="android:Theme.Light" />
+    <style name="Theme.Base" parent="android:Theme.DeviceDefault" />
 
     <style name="Theme.Sample" parent="Theme.Base" />
 

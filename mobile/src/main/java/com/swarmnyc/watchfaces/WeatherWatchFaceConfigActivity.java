@@ -1,10 +1,14 @@
 package com.swarmnyc.watchfaces;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.wearable.companion.WatchFaceCompanion;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.RadioGroup;
+import android.widget.Spinner;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -16,11 +20,19 @@ import com.google.android.gms.wearable.Wearable;
 
 public class WeatherWatchFaceConfigActivity extends Activity
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+// ------------------------------ FIELDS ------------------------------
 
+    public static final String CONFIG_BACKGROUND_COLOR = "BackgroundColor";
     private static final String TAG = "WeatherWatchFaceConfigActivity";
-    private String mPeerId;
-    private RadioGroup mScaleRadioGroup;
     private GoogleApiClient mGoogleApiClient;
+    private RadioGroup mScaleRadioGroup;
+    private Spinner mColorSpinner;
+    private String mPeerId;
+
+// ------------------------ INTERFACE METHODS ------------------------
+
+
+// --------------------- Interface ConnectionCallbacks ---------------------
 
     @Override
     public void onConnected(Bundle bundle) {
@@ -28,14 +40,19 @@ public class WeatherWatchFaceConfigActivity extends Activity
     }
 
     @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+// --------------------- Interface OnConnectionFailedListener ---------------------
+
+
+    @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
 
     }
 
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
+// -------------------------- OTHER METHODS --------------------------
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +76,20 @@ public class WeatherWatchFaceConfigActivity extends Activity
                 sendConfigUpdateMessage(config);
             }
         });
+
+        mColorSpinner = (Spinner)findViewById(R.id.colorSpinner);
+        mColorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                String colorName = (String) adapterView.getItemAtPosition(position);
+                DataMap map = new DataMap();
+                map.putInt(CONFIG_BACKGROUND_COLOR,Color.parseColor(colorName));
+                sendConfigUpdateMessage(map);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
     }
 
     @Override
@@ -77,14 +108,13 @@ public class WeatherWatchFaceConfigActivity extends Activity
 
     private void sendConfigUpdateMessage(DataMap config) {
         if (mPeerId != null) {
+            Log.d(TAG, "Sending Config: " + config);
             Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId,WeatherService.PATH_CONFIG, config.toByteArray()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                 @Override
                 public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                    Log.d(TAG,"sendConfigUpdateMessage: " + sendMessageResult.getStatus());
+                    Log.d(TAG,"Send Config Result: " + sendMessageResult.getStatus());
                 }
             });
-
-            Log.d(TAG, "Sent watch face config message: " + config);
         }
     }
 }
