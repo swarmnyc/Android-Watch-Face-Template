@@ -75,6 +75,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
          * We update twice a second to blink the colons.
          */
         static final long UPDATE_RATE_MS = 500;
+        public static final String PATH_WEATHER_WATCH_FACE_START = "/WeatherWatchFace/Start";
 
         AssetManager mAsserts;
         Bitmap mWeatherConditionBrawable;
@@ -85,7 +86,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTime.setToNow();
             }
         };
-        long mWeatherInfoRecvicedTime;
         GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(WeatherWatchFaceService.this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -124,6 +124,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         Resources mResources;
         String mWeatherCondition;
         String mWeatherConditionResourceName;
+        Time mSunriseTime;
+        Time mSunsetTime;
         Time mTime;
         boolean isRound;
         boolean mGotConfig;
@@ -142,6 +144,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         int mBackgroundDefaultColor;
         int mTemperature = Integer.MAX_VALUE;
         int mTemperatureScale;
+        long mWeatherInfoRecvicedTime;
 
 // ------------------------ INTERFACE METHODS ------------------------
 
@@ -155,13 +158,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             Wearable.MessageApi.addListener(mGoogleApiClient, this);
 
-//            Wearable.MessageApi.sendMessage(mGoogleApiClient, mNodeId, "/WeatherService/Start", null)
-//                    .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-//                        @Override
-//                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-//                            log("SendStartMessage:" + sendMessageResult.getStatus());
-//                        }
-//                    });
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, "All", PATH_WEATHER_WATCH_FACE_START, null)
+                    .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                            log("SendStartMessage:" + sendMessageResult.getStatus());
+                        }
+                    });
         }
 
         @Override
@@ -305,6 +308,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDebugInfoPaint.setTextSize(20);
 
             mTime = new Time();
+            mSunriseTime = new Time();
+            mSunsetTime = new Time();
 
             mGoogleApiClient.connect();
         }
@@ -400,8 +405,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     stringBuilder.append("weather_");
                     stringBuilder.append(mWeatherCondition);
 
-                    //TODO: Get NightTime and DayTime
-                    if ((mWeatherCondition.equals("cloudy") || mWeatherCondition.equals("clear")) && (mTime.hour <= 6 || mTime.hour >= 18)) {
+                    if ((mWeatherCondition.equals("cloudy") || mWeatherCondition.equals("clear")) && (Time.compare(mTime, mSunriseTime) < 0 || Time.compare(mTime, mSunsetTime) > 0)) {
                         //cloudy and clear have night picture
                         stringBuilder.append("night");
                     }
@@ -612,6 +616,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 if (!isInAmbientMode()) {
                     mBackgroundPaint.setColor(mBackgroundColor);
                 }
+            }
+
+            if (config.containsKey("Sunrise")) {
+                mSunriseTime.set(config.getLong("Sunrise") * 1000);
+            }
+
+            if (config.containsKey("Sunset")) {
+                mSunsetTime.set(config.getLong("Sunset") * 1000);
             }
 
             invalidate();
