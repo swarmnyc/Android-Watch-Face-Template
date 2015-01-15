@@ -22,7 +22,7 @@ public class SimpleWeatherApiTest extends ApplicationTestCase<Application> {
 
         ISimpleWeatherApi api = new OpenWeatherApi();
         api.setContext(this.getContext());
-        WeatherInfo info = api.getCurrentWeatherInfo(40.71,-74.01,true);
+        WeatherInfo info = api.getCurrentWeatherInfo(40.71,-74.01);
 
         assertNotNull(info);
     }

@@ -2,6 +2,7 @@ package com.swarmnyc.watchfaces.weather.openweather;
 
 
 import android.content.Context;
+import android.text.format.DateUtils;
 import android.util.Log;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -11,24 +12,24 @@ import com.swarmnyc.watchfaces.weather.ISimpleWeatherApi;
 import com.swarmnyc.watchfaces.weather.WeatherInfo;
 
 import java.net.URL;
+import java.util.Date;
 
 public class OpenWeatherApi implements ISimpleWeatherApi {
     private static final String TAG ="OpenWeatherApi";
-    private static final String APIURL = "http://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&units=%s&APPID=%s";
-    private static final String FAHRENHEIT = "imperial";
-    private static final String CELSIUS = "metric";
+    private static final String APIURL = "http://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&units=imperial&APPID=%s";
+
     private Context context;
 
 
     @Override
-    public WeatherInfo getCurrentWeatherInfo(double lat, double lon, boolean isFahrenheit) {
+    public WeatherInfo getCurrentWeatherInfo(double lat, double lon) {
         WeatherInfo w = null;
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
             String key = context.getResources().getString(R.string.openweather_appid);
-            String url = String.format(APIURL, lat, lon, isFahrenheit ? FAHRENHEIT : CELSIUS, key);
+            String url = String.format(APIURL, lat, lon, key);
 
             Log.d(TAG,"ApiUrl: "+url);
             OpenWeatherQueryResult result = mapper.readValue(new URL(url), OpenWeatherQueryResult.class);
@@ -36,8 +37,9 @@ public class OpenWeatherApi implements ISimpleWeatherApi {
             if ("200".equals(result.getCod())) {
                 w = new WeatherInfo();
                 w.setCityName(result.getName());
-                w.setIsFahrenheit(isFahrenheit);
                 w.setTemperature((int) result.getMain().getTemp());
+                w.setSunset(result.getSys().getSunset());
+                w.setSunrise(result.getSys().getSunrise());
 
                 OpenWeatherData[] dataArray = result.getWeather();
                 if (dataArray != null && dataArray.length > 0) {

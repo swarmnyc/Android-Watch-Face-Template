@@ -26,9 +26,13 @@ import java.util.TimerTask;
 
 public class WeatherService extends WearableListenerService
         implements LocationListener {
-// ------------------------------ FIELDS ------------------------------
+    // ------------------------------ FIELDS ------------------------------
 
     public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
+    public static final String CONFIG_KEY_TEMPERATURE = "Temperature";
+    public static final String CONFIG_KEY_CONDITION = "Condition";
+    public static final String CONFIG_KEY_SUNSET = "Sunset";
+    public static final String CONFIG_KEY_SUNRISE = "Sunrise";
     private static final String TAG = "WeatherService";
     private GoogleApiClient mGoogleApiClient;
     private LocationManager mLocationManager;
@@ -86,14 +90,14 @@ public class WeatherService extends WearableListenerService
     public void onPeerConnected(Node peer) {
         super.onPeerConnected(peer);
 
-        Log.d(TAG, "Connected: " + peer.getId());
+        Log.d(TAG, "PeerConnected: " + peer.getId());
         mPeerId = peer.getId();
         mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
     }
 
     @Override
     public void onPeerDisconnected(Node peer) {
-        Log.d(TAG, "Disconnected");
+        Log.d(TAG, "PeerDisconnected");
 
         if (mLocationManager != null) {
             mLocationManager.removeUpdates(this);
@@ -149,11 +153,13 @@ public class WeatherService extends WearableListenerService
                     api.setContext(WeatherService.this.getApplicationContext());
 
                     DataMap config = new DataMap();
-                    WeatherInfo info = api.getCurrentWeatherInfo(mLocation.getLatitude(), mLocation.getLongitude(), true);
+                    WeatherInfo info = api.getCurrentWeatherInfo(mLocation.getLatitude(), mLocation.getLongitude());
 
                     //real
-                    config.putInt("Temperature", info.getTemperature());
-                    config.putString("Condition", info.getCondition());
+                    config.putInt(CONFIG_KEY_TEMPERATURE, info.getTemperature());
+                    config.putString(CONFIG_KEY_CONDITION, info.getCondition());
+                    config.putLong(CONFIG_KEY_SUNSET, info.getSunset());
+                    config.putLong(CONFIG_KEY_SUNRISE, info.getSunrise());
 
                     //test
                     //Random random = new Random();

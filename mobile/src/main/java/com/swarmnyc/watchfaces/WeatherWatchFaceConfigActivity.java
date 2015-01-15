@@ -22,7 +22,8 @@ public class WeatherWatchFaceConfigActivity extends Activity
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 // ------------------------------ FIELDS ------------------------------
     public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
-    public static final String CONFIG_BACKGROUND_COLOR = "BackgroundColor";
+    public static final String CONFIG_KEY_BACKGROUND_COLOR = "BackgroundColor";
+    public static final String CONFIG_KEY_TEMPERATURE_SCALE = "TemperatureScale";
     private static final String TAG = "WeatherWatchFaceConfigActivity";
     private GoogleApiClient mGoogleApiClient;
     private RadioGroup mScaleRadioGroup;
@@ -72,7 +73,7 @@ public class WeatherWatchFaceConfigActivity extends Activity
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 DataMap config = new DataMap();
-                config.putInt("TemperatureScale", checkedId == R.id.fahrenheitRadioButton ? 0 : 1);
+                config.putInt(CONFIG_KEY_TEMPERATURE_SCALE, checkedId == R.id.fahrenheitRadioButton ? 0 : 1);
                 sendConfigUpdateMessage(config);
             }
         });
@@ -83,7 +84,7 @@ public class WeatherWatchFaceConfigActivity extends Activity
             public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
                 String colorName = (String) adapterView.getItemAtPosition(position);
                 DataMap map = new DataMap();
-                map.putInt(CONFIG_BACKGROUND_COLOR,Color.parseColor(colorName));
+                map.putInt(CONFIG_KEY_BACKGROUND_COLOR,Color.parseColor(colorName));
                 sendConfigUpdateMessage(map);
             }
 
@@ -112,7 +113,7 @@ public class WeatherWatchFaceConfigActivity extends Activity
             Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                 @Override
                 public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                    Log.d(TAG,"Send Config Result: " + sendMessageResult.getStatus());
+                    Log.d(TAG, "Send Config Result: " + sendMessageResult.getStatus());
                 }
             });
         }

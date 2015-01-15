@@ -1,6 +1,28 @@
 package com.swarmnyc.watchfaces.weather.openweather;
 
 public class OpenWeatherQueryResult {
+// ------------------------------ FIELDS ------------------------------
+
+    private OpenWeatherData[] weather;
+
+    public OpenWeatherData[] getWeather() {
+        return weather;
+    }
+
+    public void setWeather(OpenWeatherData[] weather) {
+        this.weather = weather;
+    }
+
+    private OpenWeatherLocation sys;
+
+    public OpenWeatherLocation getSys() {
+        return sys;
+    }
+
+    public void setSys(OpenWeatherLocation sys) {
+        this.sys = sys;
+    }
+
     private OpenWeatherTemperature main;
 
     public OpenWeatherTemperature getMain() {
@@ -59,15 +81,5 @@ public class OpenWeatherQueryResult {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    private OpenWeatherData[] weather;
-
-    public OpenWeatherData[] getWeather() {
-        return weather;
-    }
-
-    public void setWeather(OpenWeatherData[] weather) {
-        this.weather = weather;
     }
 }

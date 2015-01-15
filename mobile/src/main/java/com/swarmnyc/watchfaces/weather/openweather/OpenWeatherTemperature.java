@@ -73,3 +73,4 @@ public class OpenWeatherTemperature {
         this.temp_min = temp_min;
     }
 }
+
