@@ -3,7 +3,6 @@ package com.swarmnyc.watchfaces;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -29,7 +28,7 @@ public class WeatherService extends WearableListenerService
         implements LocationListener {
 // ------------------------------ FIELDS ------------------------------
 
-    public static final String PATH_CONFIG = "/WeatherWatchFace";
+    public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
     private static final String TAG = "WeatherService";
     private GoogleApiClient mGoogleApiClient;
     private LocationManager mLocationManager;
@@ -102,6 +101,7 @@ public class WeatherService extends WearableListenerService
 
         if (mTimer != null) {
             mTimer.cancel();
+            mTimer.purge();
             mTimer = null;
         }
 
@@ -160,7 +160,7 @@ public class WeatherService extends WearableListenerService
                     //config.putInt("Temperature",random.nextInt(100));
                     //config.putString("Condition", new String[]{"clear","rain","snow","thunder","cloudy"}[random.nextInt(4)]);
 
-                    Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                    Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_WEATHER_INFO, config.toByteArray()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                         @Override
                         public void onResult(MessageApi.SendMessageResult sendMessageResult) {
                             Log.d(TAG, "sendUpdateMessage: " + sendMessageResult.getStatus());

@@ -21,7 +21,7 @@ import com.google.android.gms.wearable.Wearable;
 public class WeatherWatchFaceConfigActivity extends Activity
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 // ------------------------------ FIELDS ------------------------------
-
+    public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
     public static final String CONFIG_BACKGROUND_COLOR = "BackgroundColor";
     private static final String TAG = "WeatherWatchFaceConfigActivity";
     private GoogleApiClient mGoogleApiClient;
@@ -109,7 +109,7 @@ public class WeatherWatchFaceConfigActivity extends Activity
     private void sendConfigUpdateMessage(DataMap config) {
         if (mPeerId != null) {
             Log.d(TAG, "Sending Config: " + config);
-            Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId,WeatherService.PATH_CONFIG, config.toByteArray()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                 @Override
                 public void onResult(MessageApi.SendMessageResult sendMessageResult) {
                     Log.d(TAG,"Send Config Result: " + sendMessageResult.getStatus());
