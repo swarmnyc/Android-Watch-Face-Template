@@ -10,6 +10,7 @@
     <string name="BackgroundLabel">Background color</string>
     <string name="CelsiusString">°C</string>
     <string name="FahrenheitString">°F</string>
+    <string name="IntervalLabel">Weather information update interval</string>
 
     <string name="color_black">Black</string>
     <string name="color_blue">Blue</string>
@@ -19,6 +20,7 @@
     <string name="color_red">Red</string>
     <string name="color_white">White</string>
 
+
     <string-array name="color_array">
         <item>@string/color_black</item>
         <item>@string/color_blue</item>
@@ -27,5 +29,13 @@
         <item>@string/color_navy</item>
         <item>@string/color_red</item>
         <item>@string/color_white</item>
+    </string-array>
+
+    <string-array name="interval_array">
+        <item>1 hour</item>
+        <item>2 hours</item>
+        <item>8 hours</item>
+        <item>12 hours</item>
+        <item>24 hours</item>
     </string-array>
 </resources>

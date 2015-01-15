@@ -2,4 +2,5 @@
 <resources>
     <integer name="weather_time_offset">-15</integer>
     <integer name="weather_time_offset_round">-15</integer>
+    <integer name="WeatherRequireInterval">1800000</integer>
 </resources>

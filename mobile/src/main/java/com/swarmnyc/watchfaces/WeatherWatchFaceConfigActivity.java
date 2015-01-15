@@ -2,8 +2,10 @@ package com.swarmnyc.watchfaces;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.wearable.companion.WatchFaceCompanion;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -13,21 +15,25 @@ import android.widget.Spinner;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Wearable;
 
 
 public class WeatherWatchFaceConfigActivity extends Activity
-        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
-// ------------------------------ FIELDS ------------------------------
+        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,ResultCallback<DataApi.DataItemResult> {
+    // ------------------------------ FIELDS ------------------------------
     public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
-    public static final String CONFIG_KEY_BACKGROUND_COLOR = "BackgroundColor";
-    public static final String CONFIG_KEY_TEMPERATURE_SCALE = "TemperatureScale";
+    public static final String KEY_CONFIG_BACKGROUND_COLOR = "BackgroundColor";
+    public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
+    public static final String KEY_CONFIG_REQUIRE_INTERVAL = "RequireInterval";
     private static final String TAG = "WeatherWatchFaceConfigActivity";
     private GoogleApiClient mGoogleApiClient;
+    private Spinner mIntervalSpinner;
     private RadioGroup mScaleRadioGroup;
-    private Spinner mColorSpinner;
+    private Spinner mBackgroundColorSpinner;
     private String mPeerId;
 
 // ------------------------ INTERFACE METHODS ------------------------
@@ -37,7 +43,6 @@ public class WeatherWatchFaceConfigActivity extends Activity
 
     @Override
     public void onConnected(Bundle bundle) {
-
     }
 
     @Override
@@ -51,6 +56,98 @@ public class WeatherWatchFaceConfigActivity extends Activity
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
 
+    }
+
+    @Override
+    public void onResult(DataApi.DataItemResult result) {
+        if (result.getStatus().isSuccess() && result.getDataItem() != null) {
+            DataMap item = DataMapItem.fromDataItem(result.getDataItem()).getDataMap();
+            if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)){
+                if (item.getInt(KEY_CONFIG_TEMPERATURE_SCALE)==1){
+                    mScaleRadioGroup.check(R.id.celsiusRadioButton);
+                }
+            }
+
+            if (item.containsKey(KEY_CONFIG_BACKGROUND_COLOR)){
+               int color = item.getInt(KEY_CONFIG_BACKGROUND_COLOR);
+                String[] names = getResources().getStringArray(R.array.color_array);
+                for (int i = 0; i < names.length; i++) {
+                    if (Color.parseColor(names[i]) == color) {
+                        mBackgroundColorSpinner.setSelection(i);
+                        break;
+                    }
+                }
+            }
+
+            if (item.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)){
+                int interval = item.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
+                String[] names = getResources().getStringArray(R.array.interval_array);
+                for (int i = 0; i < names.length; i++) {
+                    if (convertTimeStringToInt(names[i]) == interval) {
+                        mIntervalSpinner.setSelection(i);
+                        break;
+                    }
+                }
+            }
+        }
+
+        mScaleRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                DataMap config = new DataMap();
+                config.putInt(KEY_CONFIG_TEMPERATURE_SCALE, checkedId == R.id.fahrenheitRadioButton ? 0 : 1);
+                sendConfigUpdateMessage(config);
+            }
+        });
+
+        mBackgroundColorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                String colorName = (String) adapterView.getItemAtPosition(position);
+                DataMap map = new DataMap();
+                map.putInt(KEY_CONFIG_BACKGROUND_COLOR, Color.parseColor(colorName));
+                sendConfigUpdateMessage(map);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
+        mIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+
+                int interval = convertTimeStringToInt((String) adapterView.getItemAtPosition(position));
+
+                if (interval != 0) {
+                    DataMap map = new DataMap();
+                    map.putInt(KEY_CONFIG_REQUIRE_INTERVAL, interval);
+                    sendConfigUpdateMessage(map);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+    }
+
+    private int convertTimeStringToInt(String string) {
+        int interval;
+        String[] option = string.split(" ");
+
+        if (option[1].startsWith("hour")) {
+            interval = Integer.parseInt(option[0]) * (int) DateUtils.HOUR_IN_MILLIS;
+        } else if (option[1].startsWith("min")) {
+            interval = Integer.parseInt(option[0]) * (int) DateUtils.MINUTE_IN_MILLIS;
+        } else if (option[1].startsWith("sec")) {
+            interval = Integer.parseInt(option[0]) * (int) DateUtils.SECOND_IN_MILLIS;
+        }else   {
+            interval=0;
+        }
+
+        return interval;
     }
 
 // -------------------------- OTHER METHODS --------------------------
@@ -67,30 +164,19 @@ public class WeatherWatchFaceConfigActivity extends Activity
                 .addApi(Wearable.API)
                 .build();
 
+
         mScaleRadioGroup = (RadioGroup) findViewById(R.id.scaleRadioGroup);
+        mBackgroundColorSpinner = (Spinner) findViewById(R.id.colorSpinner);
+        mIntervalSpinner = (Spinner) findViewById(R.id.intervalSpinner);
 
-        mScaleRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                DataMap config = new DataMap();
-                config.putInt(CONFIG_KEY_TEMPERATURE_SCALE, checkedId == R.id.fahrenheitRadioButton ? 0 : 1);
-                sendConfigUpdateMessage(config);
-            }
-        });
+        Uri uri = new Uri.Builder()
+                .scheme("wear")
+                .path(PATH_CONFIG)
+                .authority(mPeerId)
+                .build();
 
-        mColorSpinner = (Spinner)findViewById(R.id.colorSpinner);
-        mColorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                String colorName = (String) adapterView.getItemAtPosition(position);
-                DataMap map = new DataMap();
-                map.putInt(CONFIG_KEY_BACKGROUND_COLOR,Color.parseColor(colorName));
-                sendConfigUpdateMessage(map);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
+        Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
+                .setResultCallback(this);
     }
 
     @Override

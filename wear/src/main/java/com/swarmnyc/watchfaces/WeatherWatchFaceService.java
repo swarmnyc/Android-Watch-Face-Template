@@ -61,12 +61,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             MessageApi.MessageListener {
 // ------------------------------ FIELDS ------------------------------
 
-        public static final String CONFIG_BACKGROUND_COLOR = "BackgroundColor";
-        public static final String CONFIG_CONDITION = "Condition";
-        public static final String CONFIG_TEMPERATURE = "Temperature";
-        public static final String CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
+        public static final String KEY_CONFIG_BACKGROUND_COLOR = "BackgroundColor";
+        public static final String KEY_WEATHER_CONDITION = "Condition";
+        public static final String KEY_WEATHER_TEMPERATURE = "Temperature";
+        public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
+        public static final String KEY_CONFIG_REQUIRE_INTERVAL = "RequireInterval";
         public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
         public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
+        public static final String PATH_WEATHER_REQUIRE = "/WeatherService/Require";
         static final String COLON_STRING = ":";
         static final int MSG_UPDATE_TIME = 0;
 
@@ -75,10 +77,11 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
          * We update twice a second to blink the colons.
          */
         static final long UPDATE_RATE_MS = 500;
-        public static final String PATH_WEATHER_WATCH_FACE_START = "/WeatherWatchFace/Start";
+        public static final String KEY_WEATHER_SUNRISE = "Sunrise";
+        public static final String KEY_WEATHER_SUNSET = "Sunset";
 
         AssetManager mAsserts;
-        Bitmap mWeatherConditionBrawable;
+        Bitmap mWeatherConditionDrawable;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -101,6 +104,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 switch (message.what) {
                     case MSG_UPDATE_TIME:
                         invalidate();
+
                         if (shouldTimerBeRunning()) {
                             long timeMs = System.currentTimeMillis();
                             long delayMs =
@@ -108,6 +112,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                             //log("UpdateDelayed: " + delayMs);
                             mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
                         }
+
+                        requireWeatherInfo();
                         break;
                 }
             }
@@ -144,7 +150,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         int mBackgroundDefaultColor;
         int mTemperature = Integer.MAX_VALUE;
         int mTemperatureScale;
-        long mWeatherInfoRecvicedTime;
+        long mWeatherInfoReceivedTime;
+        long mWeatherInfoRequiredTime;
+        int mRequireInterval;
 
 // ------------------------ INTERFACE METHODS ------------------------
 
@@ -157,14 +165,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             getConfig();
 
             Wearable.MessageApi.addListener(mGoogleApiClient, this);
-
-            Wearable.MessageApi.sendMessage(mGoogleApiClient, "All", PATH_WEATHER_WATCH_FACE_START, null)
-                    .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                        @Override
-                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                            log("SendStartMessage:" + sendMessageResult.getStatus());
-                        }
-                    });
+            requireWeatherInfo();
         }
 
         @Override
@@ -183,7 +184,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             fetchConfig(dataMap);
 
             if (messageEvent.getPath().equals(PATH_WEATHER_INFO)) {
-                mWeatherInfoRecvicedTime = System.currentTimeMillis();
+                mWeatherInfoReceivedTime = System.currentTimeMillis();
             }
 
             if (messageEvent.getPath().equals(PATH_CONFIG)) {
@@ -311,20 +312,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mSunriseTime = new Time();
             mSunsetTime = new Time();
 
+            mRequireInterval = mResources.getInteger(R.integer.WeatherRequireInterval);
+
             mGoogleApiClient.connect();
         }
-
-//        @Override
-//        public void onDataChanged(DataEventBuffer dataEvents) {
-//            for (DataEvent event : dataEvents) {
-//                DataMapItem item = DataMapItem.fromDataItem(event.getDataItem());
-//                DataMap config = item.getDataMap();
-//
-//                log("DataChanged: " + config);
-//
-//                fetchConfig(config);
-//            }
-//        }
 
         @Override
         public void onDestroy() {
@@ -397,7 +388,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawText(daySuffixString, x, suffixY, mDateSuffixPaint);
 
             //WeatherInfo
-            long timeSpan = System.currentTimeMillis() - mWeatherInfoRecvicedTime;
+            long timeSpan = System.currentTimeMillis() - mWeatherInfoReceivedTime;
             if (timeSpan <= DateUtils.HOUR_IN_MILLIS) {
                 // photo
                 if (!TextUtils.isEmpty(mWeatherCondition)) {
@@ -420,12 +411,12 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                         int id = mResources.getIdentifier(name, "drawable", WeatherWatchFaceService.class.getPackage().getName());
 
                         Drawable b = mResources.getDrawable(id);
-                        mWeatherConditionBrawable = ((BitmapDrawable) b).getBitmap();
-                        float sizeScale = (width * 0.5f) / mWeatherConditionBrawable.getWidth();
-                        mWeatherConditionBrawable = Bitmap.createScaledBitmap(mWeatherConditionBrawable, (int) (mWeatherConditionBrawable.getWidth() * sizeScale), (int) (mWeatherConditionBrawable.getHeight() * sizeScale), true);
+                        mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();
+                        float sizeScale = (width * 0.5f) / mWeatherConditionDrawable.getWidth();
+                        mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int) (mWeatherConditionDrawable.getWidth() * sizeScale), (int) (mWeatherConditionDrawable.getHeight() * sizeScale), true);
                     }
 
-                    canvas.drawBitmap(mWeatherConditionBrawable, radius - mWeatherConditionBrawable.getWidth() / 2, 0, null);
+                    canvas.drawBitmap(mWeatherConditionDrawable, radius - mWeatherConditionDrawable.getWidth() / 2, 0, null);
                 }
 
                 //temperature
@@ -451,12 +442,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             if (BuildConfig.DEBUG) {
                 String timeString;
-                if (mWeatherInfoRecvicedTime == 0) {
+                if (mWeatherInfoReceivedTime == 0) {
                     timeString = "No data received";
-                } else if (timeSpan >= DateUtils.HOUR_IN_MILLIS) {
-                    timeString = String.valueOf(timeSpan / DateUtils.HOUR_IN_MILLIS) + "hour(s) ago";
+                } else if (timeSpan > DateUtils.HOUR_IN_MILLIS) {
+                    timeString = String.valueOf(timeSpan / DateUtils.HOUR_IN_MILLIS) + " hours ago";
+                } else if (timeSpan > DateUtils.MINUTE_IN_MILLIS) {
+                    timeString = String.valueOf(timeSpan / DateUtils.MINUTE_IN_MILLIS) + " mins ago";
                 } else {
-                    timeString = String.valueOf(timeSpan / DateUtils.MINUTE_IN_MILLIS) + " min(s) ago";
+                    timeString = String.valueOf(timeSpan / DateUtils.SECOND_IN_MILLIS) + " secs ago";
                 }
 
                 canvas.drawText(timeString, width - mDebugInfoPaint.measureText(timeString), mDebugInfoYOffset, mDebugInfoPaint);
@@ -486,14 +479,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             super.onTimeTick();
             log("TimeTick");
             invalidate();
+            requireWeatherInfo();
         }
 
         @Override
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
-
             log("onVisibilityChanged: " + visible);
-
 
             if (visible) {
                 mGoogleApiClient.connect();
@@ -504,9 +496,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTime.setToNow();
             } else {
                 if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
-                    //Wearable.DataApi.removeListener(mGoogleApiClient, this);
                     Wearable.MessageApi.removeListener(mGoogleApiClient, this);
-                    //Wearable.NodeApi.removeListener(mGoogleApiClient, this);
                     mGoogleApiClient.disconnect();
                 }
 
@@ -581,8 +571,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         }
 
         private void fetchConfig(DataMap config) {
-            if (config.containsKey(CONFIG_CONDITION)) {
-                String cond = config.getString(CONFIG_CONDITION);
+            if (config.containsKey(KEY_WEATHER_CONDITION)) {
+                String cond = config.getString(KEY_WEATHER_CONDITION);
                 if (TextUtils.isEmpty(cond)) {
                     mWeatherCondition = null;
                 } else {
@@ -590,8 +580,25 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
             }
 
-            if (config.containsKey(CONFIG_TEMPERATURE_SCALE)) {
-                int scale = config.getInt(CONFIG_TEMPERATURE_SCALE);
+            if (config.containsKey(KEY_WEATHER_TEMPERATURE)) {
+                mTemperature = config.getInt(KEY_WEATHER_TEMPERATURE);
+                if (mTemperatureScale != ConverterUtil.FAHRENHEIT) {
+                    mTemperature = ConverterUtil.convertFahrenheitToCelsius(mTemperature);
+                }
+            }
+
+            if (config.containsKey(KEY_WEATHER_SUNRISE)) {
+                mSunriseTime.set(config.getLong(KEY_WEATHER_SUNRISE) * 1000);
+                log("SunriseTime: "+ mSunriseTime);
+            }
+
+            if (config.containsKey(KEY_WEATHER_SUNSET)) {
+                mSunsetTime.set(config.getLong(KEY_WEATHER_SUNSET) * 1000);
+                log("SunsetTime: "+ mSunsetTime);
+            }
+
+            if (config.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
+                int scale = config.getInt(KEY_CONFIG_TEMPERATURE_SCALE);
 
                 if (scale != mTemperatureScale) {
                     if (scale == ConverterUtil.FAHRENHEIT) {
@@ -604,26 +611,15 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTemperatureScale = scale;
             }
 
-            if (config.containsKey(CONFIG_TEMPERATURE)) {
-                mTemperature = config.getInt(CONFIG_TEMPERATURE);
-                if (mTemperatureScale != ConverterUtil.FAHRENHEIT) {
-                    mTemperature = ConverterUtil.convertFahrenheitToCelsius(mTemperature);
-                }
-            }
-
-            if (config.containsKey(CONFIG_BACKGROUND_COLOR)) {
-                mBackgroundColor = config.getInt(CONFIG_BACKGROUND_COLOR);
+            if (config.containsKey(KEY_CONFIG_BACKGROUND_COLOR)) {
+                mBackgroundColor = config.getInt(KEY_CONFIG_BACKGROUND_COLOR);
                 if (!isInAmbientMode()) {
                     mBackgroundPaint.setColor(mBackgroundColor);
                 }
             }
 
-            if (config.containsKey("Sunrise")) {
-                mSunriseTime.set(config.getLong("Sunrise") * 1000);
-            }
-
-            if (config.containsKey("Sunset")) {
-                mSunsetTime.set(config.getLong("Sunset") * 1000);
+            if (config.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)){
+                mRequireInterval = config.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
             }
 
             invalidate();
@@ -677,12 +673,31 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             WeatherWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
         }
 
+        private void requireWeatherInfo() {
+            if (!mGoogleApiClient.isConnected())
+                return;
+
+            long timeMs = System.currentTimeMillis();
+
+            if ((timeMs-mWeatherInfoRequiredTime) >= mRequireInterval){
+                mWeatherInfoRequiredTime = timeMs;
+                Wearable.MessageApi.sendMessage(mGoogleApiClient, "", PATH_WEATHER_REQUIRE, null)
+                        .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                            @Override
+                            public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                                log("SendStartMessage:" + sendMessageResult.getStatus());
+                            }
+                        });
+            }
+        }
+
         private void saveConfig() {
             PutDataMapRequest putDataMapRequest = PutDataMapRequest.create(PATH_CONFIG);
             DataMap config = putDataMapRequest.getDataMap();
 
-            config.putInt(CONFIG_TEMPERATURE_SCALE, mTemperatureScale);
-            config.putInt(CONFIG_BACKGROUND_COLOR, mBackgroundColor);
+            config.putInt(KEY_CONFIG_TEMPERATURE_SCALE, mTemperatureScale);
+            config.putInt(KEY_CONFIG_BACKGROUND_COLOR, mBackgroundColor);
+            config.putInt(KEY_CONFIG_REQUIRE_INTERVAL, mRequireInterval);
 
             Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapRequest.asPutDataRequest())
                     .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {

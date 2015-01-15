@@ -61,4 +61,22 @@
         android:entries="@array/color_array"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/IntervalLabel"
+        android:id="@+id/intervalLabel"
+        android:layout_below="@+id/colorSpinner"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"/>
+
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/intervalSpinner"
+        android:layout_below="@+id/intervalLabel"
+        android:entries="@array/interval_array"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"/>
 </RelativeLayout>
