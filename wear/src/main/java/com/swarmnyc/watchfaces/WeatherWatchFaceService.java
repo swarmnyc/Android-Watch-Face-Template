@@ -35,6 +35,7 @@ import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
+import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.Wearable;
@@ -58,27 +59,29 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
     private class Engine extends CanvasWatchFaceService.Engine
             implements GoogleApiClient.ConnectionCallbacks,
             GoogleApiClient.OnConnectionFailedListener,
-            MessageApi.MessageListener {
+            MessageApi.MessageListener,
+            NodeApi.NodeListener {
 // ------------------------------ FIELDS ------------------------------
 
         public static final String KEY_CONFIG_BACKGROUND_COLOR = "BackgroundColor";
-        public static final String KEY_WEATHER_CONDITION = "Condition";
-        public static final String KEY_WEATHER_TEMPERATURE = "Temperature";
-        public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
         public static final String KEY_CONFIG_REQUIRE_INTERVAL = "RequireInterval";
+        public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
+        public static final String KEY_WEATHER_CONDITION = "Condition";
+        public static final String KEY_WEATHER_SUNRISE = "Sunrise";
+        public static final String KEY_WEATHER_SUNSET = "Sunset";
+        public static final String KEY_WEATHER_TEMPERATURE = "Temperature";
         public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
         public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
         public static final String PATH_WEATHER_REQUIRE = "/WeatherService/Require";
-        static final String COLON_STRING = ":";
-        static final int MSG_UPDATE_TIME = 0;
+        private static final String COLON_STRING = ":";
+        private static final int MSG_UPDATE_TIME = 0;
 
         /**
          * Update rate in milliseconds for normal (not ambient and not mute) mode.
          * We update twice a second to blink the colons.
          */
-        static final long UPDATE_RATE_MS = 500;
-        public static final String KEY_WEATHER_SUNRISE = "Sunrise";
-        public static final String KEY_WEATHER_SUNSET = "Sunset";
+        private static final long UPDATE_RATE_MS = 500;
+        private static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 4;
 
         AssetManager mAsserts;
         Bitmap mWeatherConditionDrawable;
@@ -148,11 +151,11 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         float mTimeYOffset;
         int mBackgroundColor;
         int mBackgroundDefaultColor;
+        int mRequireInterval;
         int mTemperature = Integer.MAX_VALUE;
         int mTemperatureScale;
         long mWeatherInfoReceivedTime;
         long mWeatherInfoRequiredTime;
-        int mRequireInterval;
 
 // ------------------------ INTERFACE METHODS ------------------------
 
@@ -165,6 +168,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             getConfig();
 
             Wearable.MessageApi.addListener(mGoogleApiClient, this);
+            Wearable.NodeApi.addListener(mGoogleApiClient, this);
             requireWeatherInfo();
         }
 
@@ -190,6 +194,19 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             if (messageEvent.getPath().equals(PATH_CONFIG)) {
                 saveConfig();
             }
+        }
+
+// --------------------- Interface NodeListener ---------------------
+
+        @Override
+        public void onPeerConnected(Node node) {
+            log("PeerConnected: " + node);
+            requireWeatherInfo();
+        }
+
+        @Override
+        public void onPeerDisconnected(Node node) {
+            log("PeerDisconnected: " + node);
         }
 
 // --------------------- Interface OnConnectionFailedListener ---------------------
@@ -389,7 +406,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             //WeatherInfo
             long timeSpan = System.currentTimeMillis() - mWeatherInfoReceivedTime;
-            if (timeSpan <= DateUtils.HOUR_IN_MILLIS) {
+            if (timeSpan <= WEATHER_INFO_TIME_OUT) {
                 // photo
                 if (!TextUtils.isEmpty(mWeatherCondition)) {
                     StringBuilder stringBuilder = new StringBuilder();
@@ -497,6 +514,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             } else {
                 if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
                     Wearable.MessageApi.removeListener(mGoogleApiClient, this);
+                    Wearable.NodeApi.removeListener(mGoogleApiClient, this);
                     mGoogleApiClient.disconnect();
                 }
 
@@ -589,12 +607,12 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             if (config.containsKey(KEY_WEATHER_SUNRISE)) {
                 mSunriseTime.set(config.getLong(KEY_WEATHER_SUNRISE) * 1000);
-                log("SunriseTime: "+ mSunriseTime);
+                log("SunriseTime: " + mSunriseTime);
             }
 
             if (config.containsKey(KEY_WEATHER_SUNSET)) {
                 mSunsetTime.set(config.getLong(KEY_WEATHER_SUNSET) * 1000);
-                log("SunsetTime: "+ mSunsetTime);
+                log("SunsetTime: " + mSunsetTime);
             }
 
             if (config.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
@@ -618,7 +636,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
             }
 
-            if (config.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)){
+            if (config.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)) {
                 mRequireInterval = config.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
             }
 
@@ -679,16 +697,22 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             long timeMs = System.currentTimeMillis();
 
-            if ((timeMs-mWeatherInfoRequiredTime) >= mRequireInterval){
-                mWeatherInfoRequiredTime = timeMs;
-                Wearable.MessageApi.sendMessage(mGoogleApiClient, "", PATH_WEATHER_REQUIRE, null)
-                        .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                            @Override
-                            public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                                log("SendStartMessage:" + sendMessageResult.getStatus());
-                            }
-                        });
-            }
+            // The weather info is still up to date.
+            if ((timeMs - mWeatherInfoReceivedTime) <= mRequireInterval)
+                return;
+
+            // Try once in a min.
+            if ((timeMs - mWeatherInfoRequiredTime) <= DateUtils.MINUTE_IN_MILLIS)
+                return;
+
+            mWeatherInfoRequiredTime = timeMs;
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, "", PATH_WEATHER_REQUIRE, null)
+                    .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                            log("SendStartMessage:" + sendMessageResult.getStatus());
+                        }
+                    });
         }
 
         private void saveConfig() {
