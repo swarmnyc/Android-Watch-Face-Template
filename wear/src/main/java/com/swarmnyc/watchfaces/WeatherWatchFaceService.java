@@ -324,6 +324,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDebugInfoPaint = new Paint();
             mDebugInfoPaint.setColor(Color.parseColor("White"));
             mDebugInfoPaint.setTextSize(20);
+            mDebugInfoPaint.setAntiAlias(true);
 
             mTime = new Time();
             mSunriseTime = new Time();
@@ -346,9 +347,16 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             //log("Draw");
             mTime.setToNow();
 
+            boolean hasPeekCard = getPeekCardPosition().top!=0;
             int width = bounds.width();
             int height = bounds.height();
             float radius = width / 2;
+            float yOffset;
+            if(hasPeekCard){
+                yOffset = height * 0.05f;
+            }else{
+                yOffset = 0;
+            }
 
             canvas.drawRect(0, 0, width, height, mBackgroundPaint);
 
@@ -367,7 +375,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             float hourWidth = mTimePaint.measureText(hourString);
 
             float x = radius - hourWidth - mColonXOffset + mTimeXOffset;
-            float y = radius - mTimeYOffset;
+            float y = radius - mTimeYOffset - yOffset;
             float suffixY;
 
             canvas.drawText(hourString, x, y, mTimePaint);
@@ -433,7 +441,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                         mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int) (mWeatherConditionDrawable.getWidth() * sizeScale), (int) (mWeatherConditionDrawable.getHeight() * sizeScale), true);
                     }
 
-                    canvas.drawBitmap(mWeatherConditionDrawable, radius - mWeatherConditionDrawable.getWidth() / 2, 0, null);
+                    canvas.drawBitmap(mWeatherConditionDrawable, radius - mWeatherConditionDrawable.getWidth() / 2, 0 - yOffset, null);
                 }
 
                 //temperature
@@ -444,7 +452,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(temperatureScaleString)) / 2;
                     float borderPadding = temperatureRadius * 0.5f;
                     x = radius;
-                    y = bounds.height() * 0.80f;
+                    //y = bounds.height() * (getPeekCardPosition().top == 0 ? 0.80f : 0.70f);
+                    y = bounds.height() * (hasPeekCard ? 0.75f : 0.80f) - yOffset;
+
+                    //log("PeekCardPosition: " + getPeekCardPosition());
                     suffixY = y - mTemperatureSuffixYOffset;
                     canvas.drawCircle(radius, y + borderPadding / 2, temperatureRadius + borderPadding, mTemperatureBorderPaint);
 
