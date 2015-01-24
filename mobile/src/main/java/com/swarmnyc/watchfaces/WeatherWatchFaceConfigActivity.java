@@ -2,7 +2,6 @@ package com.swarmnyc.watchfaces;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.support.wearable.companion.WatchFaceCompanion;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -19,19 +18,31 @@ import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Wearable;
+import com.google.inject.Inject;
+import com.swarmnyc.watchfaces.weather.IWeatherApi;
 
+import roboguice.activity.RoboActivity;
+import roboguice.inject.ContentView;
+import roboguice.inject.InjectView;
 
-public class WeatherWatchFaceConfigActivity extends ActionBarActivity
+@ContentView(R.layout.activity_weather_watch_face_config)
+public class WeatherWatchFaceConfigActivity extends RoboActivity
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ResultCallback<DataApi.DataItemResult> {
-    // ------------------------------ FIELDS ------------------------------
+// ------------------------------ FIELDS ------------------------------
+
     public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
     public static final String KEY_CONFIG_THEME = "THEME";
     public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
     public static final String KEY_CONFIG_REQUIRE_INTERVAL = "RequireInterval";
     private static final String TAG = "WeatherWatchFaceConfigActivity";
     private GoogleApiClient mGoogleApiClient;
+
+    @InjectView(R.id.intervalSpinner)
     private Spinner mIntervalSpinner;
+
+    @InjectView(R.id.scaleRadioGroup)
     private RadioGroup mScaleRadioGroup;
+
     private int mTheme = 3;
     private String mPeerId;
 
@@ -51,11 +62,13 @@ public class WeatherWatchFaceConfigActivity extends ActionBarActivity
 
 // --------------------- Interface OnConnectionFailedListener ---------------------
 
-
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
 
     }
+
+// --------------------- Interface ResultCallback ---------------------
+
 
     @Override
     public void onResult(DataApi.DataItemResult result) {
@@ -124,7 +137,6 @@ public class WeatherWatchFaceConfigActivity extends ActionBarActivity
         mIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-
                 int interval = convertTimeStringToInt((String) adapterView.getItemAtPosition(position));
 
                 if (interval != 0) {
@@ -139,6 +151,8 @@ public class WeatherWatchFaceConfigActivity extends ActionBarActivity
             }
         });
     }
+
+// -------------------------- OTHER METHODS --------------------------
 
     private int convertTimeStringToInt(String string) {
         int interval;
@@ -157,8 +171,6 @@ public class WeatherWatchFaceConfigActivity extends ActionBarActivity
         return interval;
     }
 
-// -------------------------- OTHER METHODS --------------------------
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -170,11 +182,6 @@ public class WeatherWatchFaceConfigActivity extends ActionBarActivity
                 .addOnConnectionFailedListener(this)
                 .addApi(Wearable.API)
                 .build();
-
-
-        mScaleRadioGroup = (RadioGroup) findViewById(R.id.scaleRadioGroup);
-        //mBackgroundColorSpinner = (Spinner) findViewById(R.id.colorSpinner);
-        mIntervalSpinner = (Spinner) findViewById(R.id.intervalSpinner);
 
         Uri uri = new Uri.Builder()
                 .scheme("wear")
@@ -203,7 +210,8 @@ public class WeatherWatchFaceConfigActivity extends ActionBarActivity
     private void sendConfigUpdateMessage(DataMap config) {
         if (mPeerId != null) {
             Log.d(TAG, "Sending Config: " + config);
-            Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray()).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray())
+                    .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                 @Override
                 public void onResult(MessageApi.SendMessageResult sendMessageResult) {
                     Log.d(TAG, "Send Config Result: " + sendMessageResult.getStatus());

@@ -31,12 +31,18 @@ android {
     }
 }
 
+project.tasks.withType(JavaCompile) { task ->
+    options.compilerArgs << "-AguiceAnnotationDatabasePackageName=com.swarmnyc.watchfaces"
+}
+
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile "com.google.android.support:wearable:1.1.+"
-    compile 'com.android.support:appcompat-v7:21.0.3'
+//    compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'com.google.android.gms:play-services:6.5.87'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.5.0'
+    compile 'org.roboguice:roboguice:3.0.1'
+    provided 'org.roboguice:roboblender:3.0.1'
     wearApp project(':wear')
 }
 

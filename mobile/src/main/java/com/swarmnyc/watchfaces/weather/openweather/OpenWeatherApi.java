@@ -2,24 +2,23 @@ package com.swarmnyc.watchfaces.weather.openweather;
 
 
 import android.content.Context;
-import android.text.format.DateUtils;
 import android.util.Log;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 import com.swarmnyc.watchfaces.R;
-import com.swarmnyc.watchfaces.weather.ISimpleWeatherApi;
+import com.swarmnyc.watchfaces.weather.IWeatherApi;
 import com.swarmnyc.watchfaces.weather.WeatherInfo;
 
 import java.net.URL;
-import java.util.Date;
 
-public class OpenWeatherApi implements ISimpleWeatherApi {
+public class OpenWeatherApi implements IWeatherApi {
     private static final String TAG ="OpenWeatherApi";
     private static final String APIURL = "http://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&units=imperial&APPID=%s";
 
+    @Inject
     private Context context;
-
 
     @Override
     public WeatherInfo getCurrentWeatherInfo(double lat, double lon) {
@@ -51,11 +50,6 @@ public class OpenWeatherApi implements ISimpleWeatherApi {
         }
 
         return w;
-    }
-
-    @Override
-    public void setContext(Context context) {
-        this.context = context;
     }
 
     private String ConvertCondition(String code) {

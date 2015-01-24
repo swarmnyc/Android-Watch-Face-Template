@@ -371,13 +371,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             String minString = String.format("%02d", mTime.minute);
 
             //Test number
-            hourString = "11";
-            minString = "34";
-            mTemperature = 50;
-            mWeatherCondition = "clear";
-            mWeatherInfoReceivedTime = System.currentTimeMillis();
-            mSunriseTime.set(mWeatherInfoReceivedTime-10000);
-            mSunsetTime.set(mWeatherInfoReceivedTime+10000);
+//            hourString = "11";
+//            minString = "34";
+//            mTemperature = 50;
+//            mWeatherCondition = "clear";
+//            mWeatherInfoReceivedTime = System.currentTimeMillis();
+//            mSunriseTime.set(mWeatherInfoReceivedTime-10000);
+//            mSunsetTime.set(mWeatherInfoReceivedTime+10000);
 
             float hourWidth = mTimePaint.measureText(hourString);
 

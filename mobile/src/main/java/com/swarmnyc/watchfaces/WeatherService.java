@@ -16,9 +16,12 @@ import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
-import com.swarmnyc.watchfaces.weather.ISimpleWeatherApi;
+import com.google.inject.Inject;
+import com.swarmnyc.watchfaces.weather.IWeatherApi;
 import com.swarmnyc.watchfaces.weather.WeatherInfo;
 import com.swarmnyc.watchfaces.weather.openweather.OpenWeatherApi;
+
+import roboguice.RoboGuice;
 
 public class WeatherService extends WearableListenerService {
 
@@ -74,17 +77,17 @@ public class WeatherService extends WearableListenerService {
     }
 
     private class Task extends AsyncTask {
+        @Inject
+        IWeatherApi api;
 
         @Override
         protected Object doInBackground(Object[] params) {
             try {
                 Log.d(TAG, "Task Running");
+                RoboGuice.getInjector(WeatherService.this.getApplicationContext()).injectMembers(this);
 
                 if (!mGoogleApiClient.isConnected())
                     mGoogleApiClient.connect();
-
-                ISimpleWeatherApi api = new OpenWeatherApi();
-                api.setContext(WeatherService.this.getApplicationContext());
 
                 DataMap config = new DataMap();
                 WeatherInfo info = api.getCurrentWeatherInfo(mLocation.getLatitude(), mLocation.getLongitude());
