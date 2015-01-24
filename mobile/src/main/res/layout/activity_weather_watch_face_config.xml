@@ -1,82 +1,138 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:tools="http://schemas.android.com/tools"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingLeft="@dimen/activity_horizontal_margin"
-                android:paddingRight="@dimen/activity_horizontal_margin"
-                android:paddingTop="@dimen/activity_vertical_margin"
-                android:paddingBottom="@dimen/activity_vertical_margin"
-                tools:context="com.swarmnyc.watchfaces.WeatherWatchFaceConfigActivity">
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context="com.swarmnyc.watchfaces.WeatherWatchFaceConfigActivity">
 
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/TemperatureScaleLabel"
-        android:id="@+id/temperatureLabel"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
-
-    <RadioGroup
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_below="@+id/temperatureLabel"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:id="@+id/scaleRadioGroup">
-        <RadioButton
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="@string/preview"
+            style="@style/TitleLabel" />
+
+        <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/CelsiusString"
-            android:id="@+id/celsiusRadioButton"
-            android:checked="false"
-            android:layout_weight="0.5"/>
-        <RadioButton
-            android:layout_width="wrap_content"
+            tools:src="@drawable/preview_weather_1"
+            android:layout_gravity="center_horizontal"
+            android:layout_margin="@dimen/main_margin"
+            android:contentDescription="@string/preview_image" />
+
+        <View style="@style/HorizontalLine" />
+
+        <TextView
+            style="@style/TitleLabel"
+            android:text="@string/color" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/FahrenheitString"
-            android:id="@+id/fahrenheitRadioButton"
-            android:checked="true"
-            android:layout_weight="0.5"/>
+            android:weightSum="4"
+            android:layout_marginTop="@dimen/main_margin"
+            android:layout_marginBottom="@dimen/main_margin">
+
+            <Button
+                android:id="@+id/colorbutton1"
+                style="@style/ColorButton"
+                android:background="@drawable/color_button_1" />
+
+            <Button
+                android:id="@+id/colorbutton2"
+                style="@style/ColorButton"
+                android:background="@drawable/color_button_2" />
+
+            <Button
+                android:id="@+id/colorbutton3"
+                style="@style/ColorButton"
+                android:background="@drawable/color_button_3" />
+
+            <Button
+                android:id="@+id/colorbutton4"
+                style="@style/ColorButton"
+                android:background="@drawable/color_button_4" />
+        </LinearLayout>
+
+        <View style="@style/HorizontalLine" />
+
+        <TextView
+            style="@style/TitleLabel"
+            android:text="@string/clock_settings" />
+
+        <Switch
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/time_mode"
+            android:id="@+id/switch_time_unit"
+            android:layout_marginTop="@dimen/main_margin"
+            android:layout_marginBottom="@dimen/main_margin" />
+
+        <View style="@style/HorizontalLine" />
+
+        <TextView
+            style="@style/TitleLabel"
+            android:text="@string/weather" />
+
+        <TextView
+            android:text="@string/unit"
+            android:layout_marginTop="@dimen/main_margin"
+            android:layout_marginBottom="@dimen/main_margin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/scaleRadioGroup"
+            android:layout_marginLeft="@dimen/main_margin">
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/celsius"
+                android:id="@+id/celsiusRadioButton" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fahrenheit"
+                android:id="@+id/fahrenheitRadioButton" />
         </RadioGroup>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/BackgroundLabel"
-        android:id="@+id/backgroundLabel"
-        android:layout_below="@+id/scaleRadioGroup"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
 
-    <Spinner
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/colorSpinner"
-        android:layout_below="@+id/backgroundLabel"
-        android:entries="@array/color_array"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/IntervalLabel"
-        android:id="@+id/intervalLabel"
-        android:layout_below="@+id/colorSpinner"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="@string/update_interval"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
 
-    <Spinner
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/intervalSpinner"
-        android:layout_below="@+id/intervalLabel"
-        android:entries="@array/interval_array"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
-</RelativeLayout>
+            <Spinner
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/intervalSpinner"
+                android:entries="@array/interval_array"
+                android:layout_alignParentRight="true" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:background="#00b5cf">
+            <ImageView
+                android:layout_margin="@dimen/main_margin"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/company_info" />
+        </RelativeLayout>
+
+
+    </LinearLayout>
+</ScrollView>

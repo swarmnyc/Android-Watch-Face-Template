@@ -228,7 +228,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTimePaint.setAntiAlias(antiAlias);
                 mDatePaint.setAntiAlias(antiAlias);
                 mTemperaturePaint.setAntiAlias(antiAlias);
-                mTemperatureBorderPaint.setAntiAlias(antiAlias);
+                //mTemperatureBorderPaint.setAntiAlias(antiAlias);
             }
 
             if (inAmbientMode) {
@@ -256,7 +256,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     R.dimen.weather_internal_distance_round : R.dimen.weather_internal_distance);
 
             mTimeXOffset = mResources.getInteger(isRound ?
-                    R.integer.weather_time_offset_round : R.integer.weather_time_offset);
+                    R.integer.weather_time_xoffset_round : R.integer.weather_time_xoffset);
+
+            mTimeYOffset = mResources.getInteger(isRound ?
+                    R.integer.weather_time_yoffset_round : R.integer.weather_time_yoffset);
 
             float timeTextSize = mResources.getDimension(isRound ?
                     R.dimen.weather_time_size_round : R.dimen.weather_time_size);
@@ -279,8 +282,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mTemperaturePaint.setTextSize(tempTextSize);
             mTemperatureSuffixPaint.setTextSize(tempSuffixTextSize);
 
+            mTimeYOffset += (mTimePaint.descent() + mTimePaint.ascent()) / 2;
             mColonXOffset = mTimePaint.measureText(COLON_STRING) / 2;
-            mTimeYOffset = (mTimePaint.descent() + mTimePaint.ascent()) / 2;
             mDateYOffset = (mDatePaint.descent() + mDatePaint.ascent()) / 2;
             mDateSuffixYOffset = (mDateSuffixPaint.descent() + mDateSuffixPaint.ascent()) / 2;
             mTemperatureYOffset = (mTemperaturePaint.descent() + mTemperaturePaint.ascent()) / 2;
@@ -368,9 +371,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             String minString = String.format("%02d", mTime.minute);
 
             //Test number
-            //hourString = "07";
-            //minString = "30";
-            //mTemperature = 50;
+            hourString = "11";
+            minString = "34";
+            mTemperature = 50;
+            mWeatherCondition = "clear";
+            mWeatherInfoReceivedTime = System.currentTimeMillis();
+            mSunriseTime.set(mWeatherInfoReceivedTime-10000);
+            mSunsetTime.set(mWeatherInfoReceivedTime+10000);
 
             float hourWidth = mTimePaint.measureText(hourString);
 

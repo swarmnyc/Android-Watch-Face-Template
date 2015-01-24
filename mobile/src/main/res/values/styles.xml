@@ -1,8 +1,36 @@
 <resources>
 
-    <style name="Theme.Base" parent="android:Theme.DeviceDefault" />
+    <style name="Theme.Base" parent="Base.Theme.AppCompat.Light.DarkActionBar" />
 
-    <style name="Theme.Sample" parent="Theme.Base" />
+    <style name="AppTheme" parent="Theme.Base" >
+    </style>
 
-    <style name="AppTheme" parent="Theme.Sample" />
+    <style name="ConfigTheme" parent="Theme.Base" >
+        <item name="android:displayOptions">showHome|homeAsUp|showTitle</item>
+        <item name="displayOptions">showHome|homeAsUp|showTitle</item>
+        <item name="android:icon">@android:color/transparent</item>
+    </style>
+
+    <style name="TitleLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/config_main</item>
+        <item name="android:textSize">24dp</item>
+    </style>
+
+    <style name="HorizontalLine">
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/config_main</item>
+        <item name="android:layout_marginBottom">@dimen/main_margin</item>
+        <item name="android:layout_marginTop">@dimen/main_margin</item>
+    </style>
+
+    <style name="ColorButton">
+        <item name="android:layout_width">-1dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginLeft">@dimen/main_margin</item>
+        <item name="android:layout_marginRight">@dimen/main_margin</item>
+    </style>
 </resources>

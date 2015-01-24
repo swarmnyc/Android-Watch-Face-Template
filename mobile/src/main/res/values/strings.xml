@@ -5,12 +5,15 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="openweather_appid">0646bea53ea069b85519591936d638b7</string>
-    <string name="title_activity_weather_watch_face_config">Config</string>
-    <string name="TemperatureScaleLabel">Temperature scale</string>
+    <string name="title_activity_weather_watch_face_config">SWARM Weather</string>
     <string name="BackgroundLabel">Background color</string>
-    <string name="CelsiusString">°C</string>
-    <string name="FahrenheitString">°F</string>
+    <string name="celsius">Celsius</string>
+    <string name="fahrenheit">Fahrenheit</string>
     <string name="IntervalLabel">Weather information update interval</string>
+    <string name="preview">Preview</string>
+    <string name="preview_image">Preview Image</string>
+    <string name="color">Color</string>
+    <string name="clock_settings">Clock Settings</string>
 
     <string name="color_black">Black</string>
     <string name="color_blue">Blue</string>
@@ -19,6 +22,10 @@
     <string name="color_navy">Navy</string>
     <string name="color_red">Red</string>
     <string name="color_white">White</string>
+    <string name="time_mode">12 Hour Time Mode</string>
+    <string name="weather">Weather</string>
+    <string name="unit">Unit</string>
+    <string name="update_interval">Update Interval</string>
 
 
     <string-array name="color_array">

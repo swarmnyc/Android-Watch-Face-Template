@@ -19,7 +19,8 @@
 
         <activity
             android:name=".WeatherWatchFaceConfigActivity"
-            android:label="@string/title_activity_weather_watch_face_config" >
+            android:label="@string/title_activity_weather_watch_face_config"
+            android:theme="@style/ConfigTheme">
             <intent-filter>
                 <action android:name="com.swarmnyc.watchfaces.CONFIG_WEATHER" />
                 <category android:name="com.google.android.wearable.watchface.category.COMPANION_CONFIGURATION" />

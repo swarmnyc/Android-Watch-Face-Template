@@ -1,9 +1,8 @@
 package com.swarmnyc.watchfaces;
 
-import android.app.Activity;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.support.wearable.companion.WatchFaceCompanion;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -22,18 +21,18 @@ import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Wearable;
 
 
-public class WeatherWatchFaceConfigActivity extends Activity
-        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,ResultCallback<DataApi.DataItemResult> {
+public class WeatherWatchFaceConfigActivity extends ActionBarActivity
+        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ResultCallback<DataApi.DataItemResult> {
     // ------------------------------ FIELDS ------------------------------
     public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
-    public static final String KEY_CONFIG_BACKGROUND_COLOR = "BackgroundColor";
+    public static final String KEY_CONFIG_THEME = "THEME";
     public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
     public static final String KEY_CONFIG_REQUIRE_INTERVAL = "RequireInterval";
     private static final String TAG = "WeatherWatchFaceConfigActivity";
     private GoogleApiClient mGoogleApiClient;
     private Spinner mIntervalSpinner;
     private RadioGroup mScaleRadioGroup;
-    private Spinner mBackgroundColorSpinner;
+    private int mTheme = 3;
     private String mPeerId;
 
 // ------------------------ INTERFACE METHODS ------------------------
@@ -62,24 +61,32 @@ public class WeatherWatchFaceConfigActivity extends Activity
     public void onResult(DataApi.DataItemResult result) {
         if (result.getStatus().isSuccess() && result.getDataItem() != null) {
             DataMap item = DataMapItem.fromDataItem(result.getDataItem()).getDataMap();
-            if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)){
-                if (item.getInt(KEY_CONFIG_TEMPERATURE_SCALE)==1){
+            if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
+                if (item.getInt(KEY_CONFIG_TEMPERATURE_SCALE) == 1) {
                     mScaleRadioGroup.check(R.id.celsiusRadioButton);
+                } else {
+                    mScaleRadioGroup.check(R.id.fahrenheitRadioButton);
                 }
             }
 
-            if (item.containsKey(KEY_CONFIG_BACKGROUND_COLOR)){
-               int color = item.getInt(KEY_CONFIG_BACKGROUND_COLOR);
-                String[] names = getResources().getStringArray(R.array.color_array);
-                for (int i = 0; i < names.length; i++) {
-                    if (Color.parseColor(names[i]) == color) {
-                        mBackgroundColorSpinner.setSelection(i);
-                        break;
-                    }
-                }
+            if (item.containsKey(KEY_CONFIG_THEME)) {
+                mTheme=item.getInt(KEY_CONFIG_TEMPERATURE_SCALE);
             }
 
-            if (item.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)){
+            
+
+//            if (item.containsKey(KEY_CONFIG_BACKGROUND_COLOR)) {
+//                int color = item.getInt(KEY_CONFIG_BACKGROUND_COLOR);
+//                String[] names = getResources().getStringArray(R.array.color_array);
+//                for (int i = 0; i < names.length; i++) {
+//                    if (Color.parseColor(names[i]) == color) {
+//                        mBackgroundColorSpinner.setSelection(i);
+//                        break;
+//                    }
+//                }
+//            }
+
+            if (item.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)) {
                 int interval = item.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
                 String[] names = getResources().getStringArray(R.array.interval_array);
                 for (int i = 0; i < names.length; i++) {
@@ -100,19 +107,19 @@ public class WeatherWatchFaceConfigActivity extends Activity
             }
         });
 
-        mBackgroundColorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                String colorName = (String) adapterView.getItemAtPosition(position);
-                DataMap map = new DataMap();
-                map.putInt(KEY_CONFIG_BACKGROUND_COLOR, Color.parseColor(colorName));
-                sendConfigUpdateMessage(map);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
+//        mBackgroundColorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//            @Override
+//            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+//                String colorName = (String) adapterView.getItemAtPosition(position);
+//                DataMap map = new DataMap();
+//                map.putInt(KEY_CONFIG_BACKGROUND_COLOR, Color.parseColor(colorName));
+//                sendConfigUpdateMessage(map);
+//            }
+//
+//            @Override
+//            public void onNothingSelected(AdapterView<?> parent) {
+//            }
+//        });
 
         mIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -143,8 +150,8 @@ public class WeatherWatchFaceConfigActivity extends Activity
             interval = Integer.parseInt(option[0]) * (int) DateUtils.MINUTE_IN_MILLIS;
         } else if (option[1].startsWith("sec")) {
             interval = Integer.parseInt(option[0]) * (int) DateUtils.SECOND_IN_MILLIS;
-        }else   {
-            interval=0;
+        } else {
+            interval = 0;
         }
 
         return interval;
@@ -166,7 +173,7 @@ public class WeatherWatchFaceConfigActivity extends Activity
 
 
         mScaleRadioGroup = (RadioGroup) findViewById(R.id.scaleRadioGroup);
-        mBackgroundColorSpinner = (Spinner) findViewById(R.id.colorSpinner);
+        //mBackgroundColorSpinner = (Spinner) findViewById(R.id.colorSpinner);
         mIntervalSpinner = (Spinner) findViewById(R.id.intervalSpinner);
 
         Uri uri = new Uri.Builder()
