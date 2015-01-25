@@ -5,4 +5,9 @@
     <color name="weather_date_color">#fff</color>
     <color name="weather_temperature_color">#fff</color>
     <color name="weather_temperature_border_color">#fff</color>
+
+    <color name="weather_theme_1_bg">#e55337</color>
+    <color name="weather_theme_2_bg">#14b6cf</color>
+    <color name="weather_theme_3_bg">#050707</color>
+    <color name="weather_theme_4_bg">#293b8f</color>
 </resources>

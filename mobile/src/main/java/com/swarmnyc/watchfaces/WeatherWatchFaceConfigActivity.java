@@ -1,6 +1,5 @@
 package com.swarmnyc.watchfaces;
 
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.wearable.companion.WatchFaceCompanion;
@@ -10,11 +9,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
-import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
+import android.widget.Switch;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
@@ -30,39 +30,59 @@ import roboguice.inject.InjectView;
 
 @ContentView(R.layout.activity_weather_watch_face_config)
 public class WeatherWatchFaceConfigActivity extends RoboActivity
-        implements ResultCallback<DataApi.DataItemResult> {
+        implements ResultCallback<DataApi.DataItemResult>, View.OnClickListener {
 // ------------------------------ FIELDS ------------------------------
 
-    public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
-    public static final String KEY_CONFIG_THEME = "THEME";
-    public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
     public static final String KEY_CONFIG_REQUIRE_INTERVAL = "RequireInterval";
+    public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
+    public static final String KEY_CONFIG_THEME = "Theme";
+    public static final String KEY_CONFIG_TIMEUNIT = "TimeUnit";
+    public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
     private static final String TAG = "WeatherWatchFaceConfigActivity";
+    private static final int TIMEUNIT12 = 0;
+    private static final int TIMEUNIT24 = 1;
     private GoogleApiClient mGoogleApiClient;
-
-    @InjectView(R.id.intervalSpinner)
-    private Spinner mIntervalSpinner;
-
-    @InjectView(R.id.scaleRadioGroup)
-    private RadioGroup mScaleRadioGroup;
-
-    @InjectView(R.id.cclorbutton_container)
-    private ViewGroup mColorButtonContainer;
 
     @InjectView(R.id.preview_image)
     private ImageView mPreviewImage;
 
-    private int mTheme = 3;
+    @InjectView(R.id.scaleRadioGroup)
+    private RadioGroup mScaleRadioGroup;
+
+    @InjectView(R.id.intervalSpinner)
+    private Spinner mIntervalSpinner;
     private String mPeerId;
+
+    @InjectView(R.id.switch_time_unit)
+    private Switch mTimeUnitSwitch;
+
+    @InjectView(R.id.cclorbutton_container)
+    private ViewGroup mColorButtonContainer;
+
+    private int mTheme = 3;
+    private int mTimeUnit = TIMEUNIT12;
 
 // ------------------------ INTERFACE METHODS ------------------------
 
-// --------------------- Interface ResultCallback ---------------------
 
+// --------------------- Interface OnClickListener ---------------------
+
+    @Override
+    public void onClick(View v) {
+        mTheme = (int) v.getTag();
+        for (int j = 0; j < mColorButtonContainer.getChildCount(); j++) {
+            mColorButtonContainer.getChildAt(j).setActivated(false);
+        }
+        v.setActivated(true);
+        changeTheme();
+    }
+
+// --------------------- Interface ResultCallback ---------------------
 
     @Override
     public void onResult(DataApi.DataItemResult result) {
-        //Get data
+        //Get Data from DataApi
+
         if (result.getStatus().isSuccess() && result.getDataItem() != null) {
             DataMap item = DataMapItem.fromDataItem(result.getDataItem()).getDataMap();
             if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
@@ -71,23 +91,18 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
                 } else {
                     mScaleRadioGroup.check(R.id.fahrenheitRadioButton);
                 }
+            } else {
+                mScaleRadioGroup.check(R.id.fahrenheitRadioButton);
             }
 
             if (item.containsKey(KEY_CONFIG_THEME)) {
-                mTheme = item.getInt(KEY_CONFIG_TEMPERATURE_SCALE);
+                mTheme = item.getInt(KEY_CONFIG_THEME);
             }
 
-
-//            if (item.containsKey(KEY_CONFIG_BACKGROUND_COLOR)) {
-//                int color = item.getInt(KEY_CONFIG_BACKGROUND_COLOR);
-//                String[] names = getResources().getStringArray(R.array.color_array);
-//                for (int i = 0; i < names.length; i++) {
-//                    if (Color.parseColor(names[i]) == color) {
-//                        mBackgroundColorSpinner.setSelection(i);
-//                        break;
-//                    }
-//                }
-//            }
+            if (item.containsKey(KEY_CONFIG_TIMEUNIT)) {
+                mTimeUnit = item.getInt(KEY_CONFIG_THEME);
+                mTimeUnitSwitch.setChecked(mTimeUnit == TIMEUNIT12);
+            }
 
             if (item.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)) {
                 int interval = item.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
@@ -101,6 +116,16 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
             }
         }
 
+        mTimeUnitSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mTimeUnit = isChecked ? TIMEUNIT12 : TIMEUNIT24;
+                DataMap config = new DataMap();
+                config.putInt(KEY_CONFIG_TIMEUNIT, mTimeUnit);
+                sendConfigUpdateMessage(config);
+            }
+        });
+
         mScaleRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
@@ -109,20 +134,6 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
                 sendConfigUpdateMessage(config);
             }
         });
-
-//        mBackgroundColorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-//            @Override
-//            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-//                String colorName = (String) adapterView.getItemAtPosition(position);
-//                DataMap map = new DataMap();
-//                map.putInt(KEY_CONFIG_BACKGROUND_COLOR, Color.parseColor(colorName));
-//                sendConfigUpdateMessage(map);
-//            }
-//
-//            @Override
-//            public void onNothingSelected(AdapterView<?> parent) {
-//            }
-//        });
 
         mIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -141,35 +152,10 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
             }
         });
 
-        initColorButton();
+        onClick(mColorButtonContainer.getChildAt(mTheme - 1));
     }
 
 // -------------------------- OTHER METHODS --------------------------
-
-    private int convertTimeStringToInt(String string) {
-        int interval;
-        String[] option = string.split(" ");
-
-        if (option[1].startsWith("hour")) {
-            interval = Integer.parseInt(option[0]) * (int) DateUtils.HOUR_IN_MILLIS;
-        } else if (option[1].startsWith("min")) {
-            interval = Integer.parseInt(option[0]) * (int) DateUtils.MINUTE_IN_MILLIS;
-        } else if (option[1].startsWith("sec")) {
-            interval = Integer.parseInt(option[0]) * (int) DateUtils.SECOND_IN_MILLIS;
-        } else {
-            interval = 0;
-        }
-
-        return interval;
-    }
-
-    @Override
-    protected void onStop() {
-        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
-            mGoogleApiClient.disconnect();
-        }
-        super.onStop();
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -188,6 +174,48 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
 
         Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
                 .setResultCallback(this);
+
+        initColorButton();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.disconnect();
+        }
+        super.onStop();
+    }
+
+    private int convertTimeStringToInt(String string) {
+        int interval;
+        String[] option = string.split(" ");
+
+        if (option[1].startsWith("hour")) {
+            interval = Integer.parseInt(option[0]) * (int) DateUtils.HOUR_IN_MILLIS;
+        } else if (option[1].startsWith("min")) {
+            interval = Integer.parseInt(option[0]) * (int) DateUtils.MINUTE_IN_MILLIS;
+        } else if (option[1].startsWith("sec")) {
+            interval = Integer.parseInt(option[0]) * (int) DateUtils.SECOND_IN_MILLIS;
+        } else {
+            interval = 0;
+        }
+
+        return interval;
+    }
+
+    private void changeTheme() {
+        int id = this.getResources().getIdentifier("weather_preview_" + (mTheme), "drawable", WeatherWatchFaceConfigActivity.class.getPackage().getName());
+        mPreviewImage.setImageResource(id);
+
+        DataMap dataMap = new DataMap();
+        dataMap.putInt(KEY_CONFIG_THEME, mTheme);
+        sendConfigUpdateMessage(dataMap);
     }
 
     private void initColorButton() {
@@ -206,28 +234,10 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
                             lp.height = size;
                             lp.leftMargin = margin;
                             view.setTag(i + 1);
-                            view.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    mTheme = (int) v.getTag();
-                                    changeTheme();
-                                }
-                            });
+                            view.setOnClickListener(WeatherWatchFaceConfigActivity.this);
                         }
                     }
                 });
-    }
-
-    private void changeTheme() {
-        int id = this.getResources().getIdentifier("preview_weather_" + (mTheme), "drawable", WeatherWatchFaceConfigActivity.class.getPackage().getName());
-        mPreviewImage.setImageResource(id);
-    }
-
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        mGoogleApiClient.connect();
     }
 
     private void sendConfigUpdateMessage(DataMap config) {
@@ -242,5 +252,4 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
                     });
         }
     }
-
 }

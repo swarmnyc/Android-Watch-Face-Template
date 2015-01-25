@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="interval_array">
-        <item>10 secs</item>
-        <item>30 secs</item>
         <item>1 min</item>
         <item>10 mins</item>
         <item>1 hour</item>
         <item>2 hours</item>
+        <item>4 hours</item>
         <item>8 hours</item>
         <item>12 hours</item>
         <item>24 hours</item>

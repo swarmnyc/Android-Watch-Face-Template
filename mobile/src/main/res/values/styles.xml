@@ -9,11 +9,10 @@
         <item name="android:icon">@android:color/transparent</item>
     </style>
 
-    <style name="TitleLabel">
+    <style name="TitleLabel" parent="android:TextAppearance.Large">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textColor">@color/config_main</item>
-        <item name="android:textSize">24dp</item>
     </style>
 
     <style name="HorizontalLine">
@@ -27,5 +26,11 @@
     <style name="ColorButton">
         <item name="android:layout_width">48dp</item>
         <item name="android:layout_height">48dp</item>
+    </style>
+
+    <style name="SecondTitleLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">@android:style/TextAppearance.Medium</item>
     </style>
 </resources>

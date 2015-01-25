@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_selected="true">
+    <item android:state_activated="true">
         <shape>
-            <stroke android:color="#3d3e3d" android:width="2dp"></stroke>
+            <stroke android:color="#3d3e3d" android:width="4dp"></stroke>
             <solid android:color="#14b6cf"></solid>
         </shape>
     </item>
     <item android:state_pressed="true" >
         <shape>
-            <stroke android:color="#ff292a29" android:width="2dp"></stroke>
+            <stroke android:color="#ff292a29" android:width="4dp"></stroke>
             <solid android:color="#14b6cf"></solid>
         </shape>
     </item>

@@ -21,7 +21,7 @@
             android:id="@+id/preview_image"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:src="@drawable/preview_weather_1"
+            android:src="@drawable/weather_preview_3"
             android:layout_gravity="center_horizontal"
             android:layout_margin="@dimen/main_margin"
             android:contentDescription="@string/preview_image" />
@@ -72,7 +72,8 @@
             android:text="@string/time_mode"
             android:id="@+id/switch_time_unit"
             android:layout_marginTop="@dimen/main_margin"
-            android:layout_marginBottom="@dimen/main_margin" />
+            android:layout_marginBottom="@dimen/main_margin"
+            android:checked="true"/>
 
         <View style="@style/HorizontalLine" />
 
@@ -82,10 +83,9 @@
 
         <TextView
             android:text="@string/unit"
+            style="@style/SecondTitleLabel"
             android:layout_marginTop="@dimen/main_margin"
-            android:layout_marginBottom="@dimen/main_margin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_marginBottom="@dimen/main_margin"/>
 
         <RadioGroup
             android:layout_width="match_parent"
@@ -109,11 +109,12 @@
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/main_margin"
+            android:layout_marginBottom="@dimen/main_margin">
             <TextView
                 android:text="@string/update_interval"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                style="@style/SecondTitleLabel" />
 
             <Spinner
                 android:layout_width="150dp"
