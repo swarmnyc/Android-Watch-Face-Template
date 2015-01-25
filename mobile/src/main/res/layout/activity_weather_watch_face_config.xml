@@ -18,6 +18,7 @@
             style="@style/TitleLabel" />
 
         <ImageView
+            android:id="@+id/preview_image"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             tools:src="@drawable/preview_weather_1"
@@ -34,7 +35,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:weightSum="4"
+            android:id="@+id/cclorbutton_container"
             android:layout_marginTop="@dimen/main_margin"
             android:layout_marginBottom="@dimen/main_margin">
 

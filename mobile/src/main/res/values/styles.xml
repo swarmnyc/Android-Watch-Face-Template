@@ -25,10 +25,7 @@
     </style>
 
     <style name="ColorButton">
-        <item name="android:layout_width">-1dp</item>
+        <item name="android:layout_width">48dp</item>
         <item name="android:layout_height">48dp</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:layout_marginLeft">@dimen/main_margin</item>
-        <item name="android:layout_marginRight">@dimen/main_margin</item>
     </style>
 </resources>

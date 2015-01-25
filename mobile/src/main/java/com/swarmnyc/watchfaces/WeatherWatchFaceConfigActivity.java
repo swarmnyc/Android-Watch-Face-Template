@@ -1,16 +1,21 @@
 package com.swarmnyc.watchfaces;
 
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.wearable.companion.WatchFaceCompanion;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
 
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.DataApi;
@@ -18,8 +23,6 @@ import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Wearable;
-import com.google.inject.Inject;
-import com.swarmnyc.watchfaces.weather.IWeatherApi;
 
 import roboguice.activity.RoboActivity;
 import roboguice.inject.ContentView;
@@ -27,7 +30,7 @@ import roboguice.inject.InjectView;
 
 @ContentView(R.layout.activity_weather_watch_face_config)
 public class WeatherWatchFaceConfigActivity extends RoboActivity
-        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ResultCallback<DataApi.DataItemResult> {
+        implements ResultCallback<DataApi.DataItemResult> {
 // ------------------------------ FIELDS ------------------------------
 
     public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
@@ -43,35 +46,23 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
     @InjectView(R.id.scaleRadioGroup)
     private RadioGroup mScaleRadioGroup;
 
+    @InjectView(R.id.cclorbutton_container)
+    private ViewGroup mColorButtonContainer;
+
+    @InjectView(R.id.preview_image)
+    private ImageView mPreviewImage;
+
     private int mTheme = 3;
     private String mPeerId;
 
 // ------------------------ INTERFACE METHODS ------------------------
-
-
-// --------------------- Interface ConnectionCallbacks ---------------------
-
-    @Override
-    public void onConnected(Bundle bundle) {
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-// --------------------- Interface OnConnectionFailedListener ---------------------
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-
-    }
 
 // --------------------- Interface ResultCallback ---------------------
 
 
     @Override
     public void onResult(DataApi.DataItemResult result) {
+        //Get data
         if (result.getStatus().isSuccess() && result.getDataItem() != null) {
             DataMap item = DataMapItem.fromDataItem(result.getDataItem()).getDataMap();
             if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
@@ -83,10 +74,9 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
             }
 
             if (item.containsKey(KEY_CONFIG_THEME)) {
-                mTheme=item.getInt(KEY_CONFIG_TEMPERATURE_SCALE);
+                mTheme = item.getInt(KEY_CONFIG_TEMPERATURE_SCALE);
             }
 
-            
 
 //            if (item.containsKey(KEY_CONFIG_BACKGROUND_COLOR)) {
 //                int color = item.getInt(KEY_CONFIG_BACKGROUND_COLOR);
@@ -150,6 +140,8 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
+
+        initColorButton();
     }
 
 // -------------------------- OTHER METHODS --------------------------
@@ -172,14 +164,19 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
     }
 
     @Override
+    protected void onStop() {
+        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.disconnect();
+        }
+        super.onStop();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_weather_watch_face_config);
 
         mPeerId = getIntent().getStringExtra(WatchFaceCompanion.EXTRA_PEER_ID);
         mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
                 .addApi(Wearable.API)
                 .build();
 
@@ -193,18 +190,44 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
                 .setResultCallback(this);
     }
 
+    private void initColorButton() {
+        mColorButtonContainer.getViewTreeObserver()
+                .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        mColorButtonContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        int count = mColorButtonContainer.getChildCount();
+                        int size = mColorButtonContainer.getMeasuredWidth() / (count + 1);
+                        int margin = size / (count + 1);
+                        for (int i = 0; i < count; i++) {
+                            View view = mColorButtonContainer.getChildAt(i);
+                            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
+                            lp.width = size;
+                            lp.height = size;
+                            lp.leftMargin = margin;
+                            view.setTag(i + 1);
+                            view.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    mTheme = (int) v.getTag();
+                                    changeTheme();
+                                }
+                            });
+                        }
+                    }
+                });
+    }
+
+    private void changeTheme() {
+        int id = this.getResources().getIdentifier("preview_weather_" + (mTheme), "drawable", WeatherWatchFaceConfigActivity.class.getPackage().getName());
+        mPreviewImage.setImageResource(id);
+    }
+
+
     @Override
     protected void onStart() {
         super.onStart();
         mGoogleApiClient.connect();
-    }
-
-    @Override
-    protected void onStop() {
-        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
-            mGoogleApiClient.disconnect();
-        }
-        super.onStop();
     }
 
     private void sendConfigUpdateMessage(DataMap config) {
@@ -212,11 +235,12 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
             Log.d(TAG, "Sending Config: " + config);
             Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray())
                     .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                @Override
-                public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                    Log.d(TAG, "Send Config Result: " + sendMessageResult.getStatus());
-                }
-            });
+                        @Override
+                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                            Log.d(TAG, "Send Config Result: " + sendMessageResult.getStatus());
+                        }
+                    });
         }
     }
+
 }
