@@ -35,7 +35,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/cclorbutton_container"
+            android:id="@+id/colorbutton_container"
             android:layout_marginTop="@dimen/main_margin"
             android:layout_marginBottom="@dimen/main_margin">
 
@@ -125,6 +125,7 @@
         </RelativeLayout>
 
         <RelativeLayout
+            android:id="@+id/view_logo"
             android:layout_width="match_parent"
             android:layout_height="120dp"
             android:background="#00b5cf">

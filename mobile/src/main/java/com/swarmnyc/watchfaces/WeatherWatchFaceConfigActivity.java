@@ -1,5 +1,6 @@
 package com.swarmnyc.watchfaces;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.wearable.companion.WatchFaceCompanion;
@@ -29,8 +30,7 @@ import roboguice.inject.ContentView;
 import roboguice.inject.InjectView;
 
 @ContentView(R.layout.activity_weather_watch_face_config)
-public class WeatherWatchFaceConfigActivity extends RoboActivity
-        implements ResultCallback<DataApi.DataItemResult>, View.OnClickListener {
+public class WeatherWatchFaceConfigActivity extends RoboActivity {
 // ------------------------------ FIELDS ------------------------------
 
     public static final String KEY_CONFIG_REQUIRE_INTERVAL = "RequireInterval";
@@ -41,48 +41,10 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
     private static final String TAG = "WeatherWatchFaceConfigActivity";
     private static final int TIMEUNIT12 = 0;
     private static final int TIMEUNIT24 = 1;
-    private GoogleApiClient mGoogleApiClient;
-
-    @InjectView(R.id.preview_image)
-    private ImageView mPreviewImage;
-
-    @InjectView(R.id.scaleRadioGroup)
-    private RadioGroup mScaleRadioGroup;
-
-    @InjectView(R.id.intervalSpinner)
-    private Spinner mIntervalSpinner;
-    private String mPeerId;
-
-    @InjectView(R.id.switch_time_unit)
-    private Switch mTimeUnitSwitch;
-
-    @InjectView(R.id.cclorbutton_container)
-    private ViewGroup mColorButtonContainer;
-
-    private int mTheme = 3;
-    private int mTimeUnit = TIMEUNIT12;
-
-// ------------------------ INTERFACE METHODS ------------------------
-
-
-// --------------------- Interface OnClickListener ---------------------
-
-    @Override
-    public void onClick(View v) {
-        mTheme = (int) v.getTag();
-        for (int j = 0; j < mColorButtonContainer.getChildCount(); j++) {
-            mColorButtonContainer.getChildAt(j).setActivated(false);
-        }
-        v.setActivated(true);
-        changeTheme();
-    }
-
-// --------------------- Interface ResultCallback ---------------------
-
+    
+    ResultCallback<DataApi.DataItemResult> getDataCallback = new ResultCallback<DataApi.DataItemResult>() {
     @Override
     public void onResult(DataApi.DataItemResult result) {
-        //Get Data from DataApi
-
         if (result.getStatus().isSuccess() && result.getDataItem() != null) {
             DataMap item = DataMapItem.fromDataItem(result.getDataItem()).getDataMap();
             if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
@@ -152,8 +114,45 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
             }
         });
 
-        onClick(mColorButtonContainer.getChildAt(mTheme - 1));
-    }
+        onColorViewClick.onClick(mColorButtonContainer.getChildAt(mTheme - 1));
+        }
+    };
+
+    View.OnClickListener onColorViewClick =new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            mTheme = (int) v.getTag();
+            for (int j = 0; j < mColorButtonContainer.getChildCount(); j++) {
+                mColorButtonContainer.getChildAt(j).setActivated(false);
+            }
+            v.setActivated(true);
+            changeTheme();
+        }
+    };
+
+    private GoogleApiClient mGoogleApiClient;
+
+    @InjectView(R.id.preview_image)
+    private ImageView mPreviewImage;
+
+    @InjectView(R.id.scaleRadioGroup)
+    private RadioGroup mScaleRadioGroup;
+
+    @InjectView(R.id.intervalSpinner)
+    private Spinner mIntervalSpinner;
+    private String mPeerId;
+
+    @InjectView(R.id.switch_time_unit)
+    private Switch mTimeUnitSwitch;
+
+    @InjectView(R.id.colorbutton_container)
+    private ViewGroup mColorButtonContainer;
+
+    @InjectView(R.id.view_logo)
+    private View mLogo;
+
+    private int mTheme = 3;
+    private int mTimeUnit = TIMEUNIT12;
 
 // -------------------------- OTHER METHODS --------------------------
 
@@ -173,9 +172,18 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
                 .build();
 
         Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
-                .setResultCallback(this);
+                .setResultCallback(getDataCallback);
 
         initColorButton();
+
+        mLogo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse(getResources().getString(R.string.company_url)));
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
@@ -234,7 +242,7 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity
                             lp.height = size;
                             lp.leftMargin = margin;
                             view.setTag(i + 1);
-                            view.setOnClickListener(WeatherWatchFaceConfigActivity.this);
+                            view.setOnClickListener(onColorViewClick);
                         }
                     }
                 });
