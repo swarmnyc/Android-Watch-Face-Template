@@ -304,6 +304,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             setWatchFaceStyle(new WatchFaceStyle.Builder(WeatherWatchFaceService.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_SHORT)
+            		.setAmbientPeekMode(WatchFaceStyle.AMBIENT_PEEK_MODE_HIDDEN)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
                     .build());
