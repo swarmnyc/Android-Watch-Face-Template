@@ -31,6 +31,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataItemBuffer;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
@@ -585,8 +586,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     return "October ";
                 case 10:
                     return "November ";
-                case 11:
-                    return "October ";
                 default:
                     return "December";
             }

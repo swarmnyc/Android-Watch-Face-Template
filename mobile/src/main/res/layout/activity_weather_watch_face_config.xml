@@ -103,7 +103,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/fahrenheit"
-                android:id="@+id/fahrenheitRadioButton" />
+                android:id="@+id/fahrenheitRadioButton"
+                android:checked="true"/>
         </RadioGroup>
 
 
