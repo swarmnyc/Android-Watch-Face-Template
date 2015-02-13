@@ -31,7 +31,6 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.DataApi;
-import com.google.android.gms.wearable.DataItemBuffer;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
@@ -71,7 +70,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         public static final String KEY_WEATHER_SUNRISE = "Sunrise";
         public static final String KEY_WEATHER_SUNSET = "Sunset";
         public static final String KEY_CONFIG_THEME = "Theme";
-        public static final String KEY_CONFIG_TIMEUNIT = "TimeUnit";
+        public static final String KEY_CONFIG_TIME_UNIT = "TimeUnit";
         public static final String KEY_WEATHER_TEMPERATURE = "Temperature";
         public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
         public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
@@ -83,12 +82,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private int mTheme = 3;
         private int mTimeUnit = TIMEUNIT12;
 
-        /**
-         * Update rate in milliseconds for normal (not ambient and not mute) mode.
-         * We update twice a second to blink the colons.
-         */
-        private static final long UPDATE_RATE_MS = 500;
-        private static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 4;
+        private static final long UPDATE_RATE_MS = 1000;
+        private static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 6;
 
         AssetManager mAsserts;
         Bitmap mWeatherConditionDrawable;
@@ -115,15 +110,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     case MSG_UPDATE_TIME:
                         invalidate();
 
-                        if (shouldTimerBeRunning()) {
-                            long timeMs = System.currentTimeMillis();
-                            long delayMs =
-                                    UPDATE_RATE_MS - (timeMs % UPDATE_RATE_MS);
-                            //log("UpdateDelayed: " + delayMs);
-                            mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
+                        if (shouldUpdateTimerBeRunning()) {
+                            mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, UPDATE_RATE_MS);
+                            requireWeatherInfo();
                         }
-
-                        requireWeatherInfo();
                         break;
                 }
             }
@@ -236,7 +226,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTimePaint.setAntiAlias(antiAlias);
                 mDatePaint.setAntiAlias(antiAlias);
                 mTemperaturePaint.setAntiAlias(antiAlias);
-                //mTemperatureBorderPaint.setAntiAlias(antiAlias);
             }
 
             if (inAmbientMode) {
@@ -342,7 +331,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mSunriseTime = new Time();
             mSunsetTime = new Time();
 
-            mRequireInterval = mResources.getInteger(R.integer.WeatherRequireInterval);
+            mRequireInterval = mResources.getInteger(R.integer.WeatherDefaultRequireInterval);
 
             mGoogleApiClient.connect();
         }
@@ -373,9 +362,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawRect(0, 0, width, height, mBackgroundPaint);
 
             // Time
-            boolean mShouldDrawColons = (System.currentTimeMillis() % 1000) < 500;
-            //boolean mShouldDrawColons = mTime.second % 2 ==0;
-
             String hourString = String.format("%02d", convertHour(mTime.hour));
             String minString = String.format("%02d", mTime.minute);
 
@@ -397,10 +383,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawText(hourString, x, y, mTimePaint);
 
             x = radius - mColonXOffset + mTimeXOffset;
-
-            if (isInAmbientMode() || mShouldDrawColons) {
-                canvas.drawText(COLON_STRING, x, y, mTimePaint);
-            }
+            canvas.drawText(COLON_STRING, x, y, mTimePaint);
 
             x = radius + mColonXOffset + mTimeXOffset;
             canvas.drawText(minString, x, y, mTimePaint);
@@ -468,10 +451,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(temperatureScaleString)) / 2;
                     float borderPadding = temperatureRadius * 0.5f;
                     x = radius;
-                    //y = bounds.height() * (getPeekCardPosition().top == 0 ? 0.80f : 0.70f);
                     y = bounds.height() * (hasPeekCard ? 0.75f : 0.80f) - yOffset;
 
-                    //log("PeekCardPosition: " + getPeekCardPosition());
                     suffixY = y - mTemperatureSuffixYOffset;
                     canvas.drawCircle(radius, y + borderPadding / 2, temperatureRadius + borderPadding, mTemperatureBorderPaint);
 
@@ -505,9 +486,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             super.onInterruptionFilterChanged(interruptionFilter);
 
             log("onInterruptionFilterChanged: " + interruptionFilter);
-
-            //TODO: to understand onInterruptionFilterChanged
-            //boolean inMuteMode = interruptionFilter == WatchFaceService.INTERRUPTION_FILTER_NONE;
         }
 
         @Override
@@ -604,7 +582,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         }
 
-        private boolean shouldTimerBeRunning() {
+        private boolean shouldUpdateTimerBeRunning() {
             return isVisible() && !isInAmbientMode();
         }
 
@@ -667,8 +645,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
             }
 
-            if (config.containsKey(KEY_CONFIG_TIMEUNIT)) {
-                mTimeUnit = config.getInt(KEY_CONFIG_TIMEUNIT);
+            if (config.containsKey(KEY_CONFIG_TIME_UNIT)) {
+                mTimeUnit = config.getInt(KEY_CONFIG_TIME_UNIT);
             }
 
             if (config.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)) {
@@ -756,7 +734,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             config.putInt(KEY_CONFIG_TEMPERATURE_SCALE, mTemperatureScale);
             config.putInt(KEY_CONFIG_THEME, mTheme);
-            config.putInt(KEY_CONFIG_TIMEUNIT, mTimeUnit);
+            config.putInt(KEY_CONFIG_TIME_UNIT, mTimeUnit);
             config.putInt(KEY_CONFIG_REQUIRE_INTERVAL, mRequireInterval);
 
             Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapRequest.asPutDataRequest())
@@ -780,7 +758,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         private void updateTimer() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
-            if (shouldTimerBeRunning()) {
+            if (shouldUpdateTimerBeRunning()) {
                 mUpdateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME);
             }
         }
