@@ -1,4 +1,4 @@
-package com.swarmnyc.watchfaces;
+package com.swarmnyc.watchfaces.esther;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,15 +12,12 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
-import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.text.format.Time;
 import android.util.Log;
@@ -128,20 +125,12 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         };
 
-        Paint mBackgroundPaint;
-        Paint mDatePaint;
-        Paint mDateSuffixPaint;
-        Paint mDebugInfoPaint;
-        Paint mTemperatureBorderPaint;
-        Paint mTemperaturePaint;
-        Paint mTemperatureSuffixPaint;
-        Paint mTimePaint;
+
+
         Resources mResources;
-        String mWeatherCondition;
-        String mWeatherConditionResourceName;
-        Time mSunriseTime;
-        Time mSunsetTime;
-        Time mTime;
+
+
+
         boolean isRound;
         boolean mGotConfig;
         boolean mLowBitAmbient;
@@ -162,6 +151,20 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         int mTemperatureScale;
         long mWeatherInfoReceivedTime;
         long mWeatherInfoRequiredTime;
+
+        Paint mTextPaint;
+        Paint dateText;
+        Float mTextXOffset;
+        Float mTextYOffset;
+
+        Float dateTextOffset;
+        Time mTime;
+        Paint mRect;
+        Paint mBottomRect;
+
+
+        Typeface theFont;
+
 
 // ------------------------ INTERFACE METHODS ------------------------
 
@@ -230,18 +233,15 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             super.onAmbientModeChanged(inAmbientMode);
             log("onAmbientModeChanged: " + inAmbientMode);
 
-            if (mLowBitAmbient) {
-                boolean antiAlias = !inAmbientMode;
-                mTimePaint.setAntiAlias(antiAlias);
-                mDatePaint.setAntiAlias(antiAlias);
-                mTemperaturePaint.setAntiAlias(antiAlias);
-                //mTemperatureBorderPaint.setAntiAlias(antiAlias);
-            }
 
-            if (inAmbientMode) {
-                mBackgroundPaint.setColor(mBackgroundDefaultColor);
-            } else {
-                mBackgroundPaint.setColor(mBackgroundColor);
+
+            if (inAmbientMode){
+                mRect.setColor(Color.rgb(0,0,0));
+                mBottomRect.setColor(Color.rgb(50,50,50));
+            }
+            else {
+                mRect.setColor(Color.rgb(225,53,51));
+                mBottomRect.setColor(Color.rgb(38,167,193));
             }
 
 
@@ -256,46 +256,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         public void onApplyWindowInsets(WindowInsets insets) {
             super.onApplyWindowInsets(insets);
 
-            // Load resources that have alternate values for round watches.
-            isRound = insets.isRound();
 
-            mInternalDistance = mResources.getDimension(isRound ?
-                    R.dimen.weather_internal_distance_round : R.dimen.weather_internal_distance);
-
-            mTimeXOffset = mResources.getInteger(isRound ?
-                    R.integer.weather_time_xoffset_round : R.integer.weather_time_xoffset);
-
-            mTimeYOffset = mResources.getInteger(isRound ?
-                    R.integer.weather_time_yoffset_round : R.integer.weather_time_yoffset);
-
-            float timeTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_time_size_round : R.dimen.weather_time_size);
-
-            float dateTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_date_size_round : R.dimen.weather_date_size);
-
-            float dateSuffixTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_date_suffix_size_round : R.dimen.weather_date_suffix_size);
-
-            float tempTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_temperature_size_round : R.dimen.weather_temperature_size);
-
-            float tempSuffixTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_temperature_suffix_size_round : R.dimen.weather_temperature_suffix_size);
-
-            mTimePaint.setTextSize(timeTextSize);
-            mDatePaint.setTextSize(dateTextSize);
-            mDateSuffixPaint.setTextSize(dateSuffixTextSize);
-            mTemperaturePaint.setTextSize(tempTextSize);
-            mTemperatureSuffixPaint.setTextSize(tempSuffixTextSize);
-
-            mTimeYOffset += (mTimePaint.descent() + mTimePaint.ascent()) / 2;
-            mColonXOffset = mTimePaint.measureText(COLON_STRING) / 2;
-            mDateYOffset = (mDatePaint.descent() + mDatePaint.ascent()) / 2;
-            mDateSuffixYOffset = (mDateSuffixPaint.descent() + mDateSuffixPaint.ascent()) / 2;
-            mTemperatureYOffset = (mTemperaturePaint.descent() + mTemperaturePaint.ascent()) / 2;
-            mTemperatureSuffixYOffset = (mTemperatureSuffixPaint.descent() + mTemperatureSuffixPaint.ascent()) / 2;
-            mDebugInfoYOffset = 5 + mDebugInfoPaint.getTextSize() + (mDebugInfoPaint.descent() + mDebugInfoPaint.ascent()) / 2;
         }
 
         @Override
@@ -308,39 +269,46 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     .setShowSystemUiTime(false)
                     .build());
 
-            mResources = WeatherWatchFaceService.this.getResources();
-            mAsserts = WeatherWatchFaceService.this.getAssets();
 
-            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.weather_bg_color);
-            mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(mBackgroundDefaultColor);
 
-            mTemperatureBorderPaint = new Paint();
-            mTemperatureBorderPaint.setStyle(Paint.Style.STROKE);
-            mTemperatureBorderPaint.setColor(mResources.getColor(R.color.weather_temperature_border_color));
-            mTemperatureBorderPaint.setStrokeWidth(3f);
-            mTemperatureBorderPaint.setAntiAlias(true);
 
-            Typeface timeFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_time_font));
-            Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_date_font));
-            Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_temperature_font));
+            theFont = Typeface.createFromAsset(getAssets(),
+                    "fonts/Bebas-Regular.otf");
 
-            mTimePaint = createTextPaint(mResources.getColor(R.color.weather_time_color), timeFont);
-            mDatePaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
-            mDateSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
-            mTemperaturePaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
-            mTemperatureSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
 
-            mDebugInfoPaint = new Paint();
-            mDebugInfoPaint.setColor(Color.parseColor("White"));
-            mDebugInfoPaint.setTextSize(20);
-            mDebugInfoPaint.setAntiAlias(true);
+            // Create the Paint for later use
+            mTextPaint = new Paint();
+            mTextPaint.setTypeface(theFont);
+            mTextPaint.setTextSize(60);
+            mTextPaint.setColor(Color.WHITE);
+            mTextPaint.setAntiAlias(true);
+
+            mUpdateTimeHandler.sendEmptyMessageDelayed(0, 500);
 
             mTime = new Time();
-            mSunriseTime = new Time();
-            mSunsetTime = new Time();
 
-            mRequireInterval = mResources.getInteger(R.integer.WeatherRequireInterval);
+            mRect = new Paint();
+            mRect.setColor(Color.rgb(225,53,51));
+
+            mBottomRect = new Paint();
+            mBottomRect.setColor(Color.rgb(38,167,193));
+
+            // In order to make text in the center, we need adjust its position
+            mTextXOffset = mTextPaint.measureText("12:00") / 2;
+            mTextYOffset = ((mTextPaint.ascent() + mTextPaint.descent()) / 2);
+
+
+            dateText = new Paint();
+            dateText.setTextSize(18);
+            dateText.setColor(Color.WHITE);
+            dateText.setAntiAlias(true);
+            dateText.setTypeface(theFont);
+
+            dateTextOffset = dateText.measureText("TUESDAY, SEPT 02") / 2;
+
+
+
+
 
             mGoogleApiClient.connect();
         }
@@ -357,145 +325,40 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             //log("Draw");
             mTime.setToNow();
 
-            boolean hasPeekCard = getPeekCardPosition().top != 0;
-            int width = bounds.width();
-            int height = bounds.height();
-            float radius = width / 2;
-            float yOffset;
-            if (hasPeekCard) {
-                yOffset = height * 0.05f;
-            } else {
-                yOffset = 0;
-            }
-
-            canvas.drawRect(0, 0, width, height, mBackgroundPaint);
-
-            // Time
             boolean mShouldDrawColons = (System.currentTimeMillis() % 1000) < 500;
-            //boolean mShouldDrawColons = mTime.second % 2 ==0;
-
-            String hourString = String.format("%02d", convertHour(mTime.hour));
-            String minString = String.format("%02d", mTime.minute);
-
-            //For Test
-//            hourString = "11";
-//            minString = "34";
-//            mTemperature = 50;
-//            mWeatherCondition = "clear";
-//            mWeatherInfoReceivedTime = System.currentTimeMillis();
-//            mSunriseTime.set(mWeatherInfoReceivedTime-10000);
-//            mSunsetTime.set(mWeatherInfoReceivedTime+10000);
-
-            float hourWidth = mTimePaint.measureText(hourString);
-
-            float x = radius - hourWidth - mColonXOffset + mTimeXOffset;
-            float y = radius - mTimeYOffset - yOffset;
-            float suffixY;
-
-            canvas.drawText(hourString, x, y, mTimePaint);
-
-            x = radius - mColonXOffset + mTimeXOffset;
-
-            if (isInAmbientMode() || mShouldDrawColons) {
-                canvas.drawText(COLON_STRING, x, y, mTimePaint);
+            String fullTime;
+            if (mShouldDrawColons) {
+                fullTime = String.format("%02d", convertHour(mTime.hour)) + ":" + String.format("%02d", mTime.minute);
+            } else {
+                fullTime = String.format("%02d", convertHour(mTime.hour)) + " " + String.format("%02d", mTime.minute);
             }
+            canvas.drawRect(0,0,bounds.width(), (float)(bounds.height() * .66), mRect);
 
-            x = radius + mColonXOffset + mTimeXOffset;
-            canvas.drawText(minString, x, y, mTimePaint);
+            canvas.drawRect(0,(float)(bounds.height() * .66), bounds.width(), bounds.height(), mBottomRect);
 
-            suffixY = y + mDateSuffixPaint.getTextSize() +
-                    mInternalDistance +
-                    mDateSuffixYOffset;
-
-            y += mDatePaint.getTextSize() + mInternalDistance + mDateYOffset;
-
-            //Date
-            String monthString = convertToMonth(mTime.month);
-            String dayString = String.valueOf(mTime.monthDay);
-            String daySuffixString = getDaySuffix(mTime.monthDay);
-
-            float monthWidth = mDatePaint.measureText(monthString);
-            float dayWidth = mDatePaint.measureText(dayString);
-            float dateWidth = monthWidth + dayWidth +
-                    mDateSuffixPaint.measureText(daySuffixString);
-
-            x = radius - dateWidth / 2;
-            canvas.drawText(monthString, x, y, mDatePaint);
-            x += monthWidth;
-            canvas.drawText(dayString, x, y, mDatePaint);
-            x += dayWidth;
-            canvas.drawText(daySuffixString, x, suffixY, mDateSuffixPaint);
-
-            //WeatherInfo
-            long timeSpan = System.currentTimeMillis() - mWeatherInfoReceivedTime;
-            if (timeSpan <= WEATHER_INFO_TIME_OUT) {
-                // photo
-                if (!TextUtils.isEmpty(mWeatherCondition)) {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.append("weather_");
-                    stringBuilder.append(mWeatherCondition);
-
-                    if ((mWeatherCondition.equals("cloudy") || mWeatherCondition.equals("clear")) && (Time.compare(mTime, mSunriseTime) < 0 || Time.compare(mTime, mSunsetTime) > 0)) {
-                        //cloudy and clear have night picture
-                        stringBuilder.append("night");
-                    }
-                    if (this.isInAmbientMode()) {
-                        stringBuilder.append("_gray");
-                    }
-
-                    String name = stringBuilder.toString();
-                    if (!name.equals(mWeatherConditionResourceName)) {
-                        log("CreateScaledBitmap: " + name);
-                        mWeatherConditionResourceName = name;
-                        int id = mResources.getIdentifier(name, "drawable", PACKAGE_NAME);
-
-                        Drawable b = mResources.getDrawable(id);
-                        mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();
-                        float sizeScale = (width * 0.5f) / mWeatherConditionDrawable.getWidth();
-                        mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int) (mWeatherConditionDrawable.getWidth() * sizeScale), (int) (mWeatherConditionDrawable.getHeight() * sizeScale), true);
-                    }
-
-                    canvas.drawBitmap(mWeatherConditionDrawable, radius - mWeatherConditionDrawable.getWidth() / 2, 0 - yOffset, null);
-                }
-
-                //temperature
-                if (mTemperature != Integer.MAX_VALUE) {
-                    String temperatureString = String.valueOf(mTemperature);
-                    String temperatureScaleString = mTemperatureScale == ConverterUtil.FAHRENHEIT ? ConverterUtil.FAHRENHEIT_STRING : ConverterUtil.CELSIUS_STRING;
-                    float temperatureWidth = mTemperaturePaint.measureText(temperatureString);
-                    float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(temperatureScaleString)) / 2;
-                    float borderPadding = temperatureRadius * 0.5f;
-                    x = radius;
-                    //y = bounds.height() * (getPeekCardPosition().top == 0 ? 0.80f : 0.70f);
-                    y = bounds.height() * (hasPeekCard ? 0.75f : 0.80f) - yOffset;
-
-                    //log("PeekCardPosition: " + getPeekCardPosition());
-                    suffixY = y - mTemperatureSuffixYOffset;
-                    canvas.drawCircle(radius, y + borderPadding / 2, temperatureRadius + borderPadding, mTemperatureBorderPaint);
-
-                    x -= temperatureRadius;
-                    y -= mTemperatureYOffset;
-                    canvas.drawText(temperatureString, x, y, mTemperaturePaint);
-                    x += temperatureWidth;
-                    canvas.drawText(temperatureScaleString, x, suffixY, mTemperatureSuffixPaint);
-                }
-            }
+            canvas.drawRect(0,(float)(bounds.height() * .66) - 8, bounds.width(), (float)(bounds.height() * .66) + 8, mTextPaint);
 
 
-            if (BuildConfig.DEBUG) {
-                String timeString;
-                if (mWeatherInfoReceivedTime == 0) {
-                    timeString = "No data received";
-                } else if (timeSpan > DateUtils.HOUR_IN_MILLIS) {
-                    timeString = "Get: " + String.valueOf(timeSpan / DateUtils.HOUR_IN_MILLIS) + " hours ago";
-                } else if (timeSpan > DateUtils.MINUTE_IN_MILLIS) {
-                    timeString = "Get: " + String.valueOf(timeSpan / DateUtils.MINUTE_IN_MILLIS) + " mins ago";
-                } else {
-                    timeString = "Get: " + String.valueOf(timeSpan / DateUtils.SECOND_IN_MILLIS) + " secs ago";
-                }
+            mTextXOffset = mTextPaint.measureText(fullTime) / 2;
 
-                canvas.drawText(timeString, width - mDebugInfoPaint.measureText(timeString), mDebugInfoYOffset, mDebugInfoPaint);
-            }
+            canvas.drawText(fullTime,
+                    bounds.centerX() - mTextXOffset,
+                    bounds.centerY() - (float)(.11 * bounds.height()),
+                    mTextPaint);
+
+
+
+            String date = convertToDay(mTime.weekDay) + ", " + convertToMonth(mTime.month) + Integer.toString(mTime.monthDay);
+
+            dateTextOffset = dateText.measureText(date) / 2;
+
+
+            canvas.drawText(date,
+                    bounds.centerX() - dateTextOffset,
+                    (bounds.centerY() - (float)(.01 * bounds.height())),
+                    dateText);
+
+
         }
 
         @Override
@@ -514,6 +377,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
 
             log("onPropertiesChanged: LowBitAmbient=" + mLowBitAmbient);
+
+
         }
 
         @Override
@@ -604,6 +469,28 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         }
 
+        private String convertToDay(int day) {
+            switch(day) {
+                case 0:
+                    return "Sunday";
+                case 1:
+                    return "Monday";
+                case 2:
+                    return "Tuesday";
+                case 3:
+                    return "Wednesday";
+                case 4:
+                    return "Thursday";
+                case 5:
+                    return "Friday";
+                case 6:
+                    return "Saturday";
+                default:
+                    return "Sunday";
+            }
+
+        }
+
         private boolean shouldTimerBeRunning() {
             return isVisible() && !isInAmbientMode();
         }
@@ -618,14 +505,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         }
 
         private void fetchConfig(DataMap config) {
-            if (config.containsKey(KEY_WEATHER_CONDITION)) {
-                String cond = config.getString(KEY_WEATHER_CONDITION);
-                if (TextUtils.isEmpty(cond)) {
-                    mWeatherCondition = null;
-                } else {
-                    mWeatherCondition = cond;
-                }
-            }
+
 
             if (config.containsKey(KEY_WEATHER_TEMPERATURE)) {
                 mTemperature = config.getInt(KEY_WEATHER_TEMPERATURE);
@@ -634,15 +514,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
             }
 
-            if (config.containsKey(KEY_WEATHER_SUNRISE)) {
-                mSunriseTime.set(config.getLong(KEY_WEATHER_SUNRISE) * 1000);
-                log("SunriseTime: " + mSunriseTime);
-            }
 
-            if (config.containsKey(KEY_WEATHER_SUNSET)) {
-                mSunsetTime.set(config.getLong(KEY_WEATHER_SUNSET) * 1000);
-                log("SunsetTime: " + mSunsetTime);
-            }
 
             if (config.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
                 int scale = config.getInt(KEY_CONFIG_TEMPERATURE_SCALE);
@@ -658,14 +530,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mTemperatureScale = scale;
             }
 
-            if (config.containsKey(KEY_CONFIG_THEME)) {
-                mTheme = config.getInt(KEY_CONFIG_THEME);
 
-                mBackgroundColor = mResources.getColor(mResources.getIdentifier("weather_theme_" + mTheme + "_bg", "color", PACKAGE_NAME));
-                if (!isInAmbientMode()) {
-                    mBackgroundPaint.setColor(mBackgroundColor);
-                }
-            }
 
             if (config.containsKey(KEY_CONFIG_TIMEUNIT)) {
                 mTimeUnit = config.getInt(KEY_CONFIG_TIMEUNIT);

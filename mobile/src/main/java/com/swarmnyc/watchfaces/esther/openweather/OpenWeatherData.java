@@ -1,4 +1,4 @@
-package com.swarmnyc.watchfaces.weather.openweather;
+package com.swarmnyc.watchfaces.esther.openweather;
 
 public class OpenWeatherData {
     private String description;

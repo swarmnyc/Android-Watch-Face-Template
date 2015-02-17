@@ -1,4 +1,4 @@
-package com.swarmnyc.watchfaces.weather;
+package com.swarmnyc.watchfaces.esther;
 
 public class WeatherInfo {
 // ------------------------------ FIELDS ------------------------------

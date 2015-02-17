@@ -1,4 +1,4 @@
-package com.swarmnyc.watchfaces;
+package com.swarmnyc.watchfaces.esther;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -7,13 +7,7 @@ import android.support.wearable.companion.WatchFaceCompanion;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.widget.AdapterView;
 import android.widget.CompoundButton;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.Switch;
 
@@ -29,7 +23,7 @@ import roboguice.activity.RoboActivity;
 import roboguice.inject.ContentView;
 import roboguice.inject.InjectView;
 
-@ContentView(R.layout.activity_weather_watch_face_config)
+@ContentView(com.swarmnyc.watchfaces.esther.R.layout.activity_weather_watch_face_config)
 public class WeatherWatchFaceConfigActivity extends RoboActivity {
 // ------------------------------ FIELDS ------------------------------
 
@@ -47,35 +41,15 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     public void onResult(DataApi.DataItemResult result) {
         if (result.getStatus().isSuccess() && result.getDataItem() != null) {
             DataMap item = DataMapItem.fromDataItem(result.getDataItem()).getDataMap();
-            if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
-                if (item.getInt(KEY_CONFIG_TEMPERATURE_SCALE) == 1) {
-                    mScaleRadioGroup.check(R.id.celsiusRadioButton);
-                } else {
-                    mScaleRadioGroup.check(R.id.fahrenheitRadioButton);
-                }
-            } else {
-                mScaleRadioGroup.check(R.id.fahrenheitRadioButton);
-            }
 
-            if (item.containsKey(KEY_CONFIG_THEME)) {
-                mTheme = item.getInt(KEY_CONFIG_THEME);
-            }
+
 
             if (item.containsKey(KEY_CONFIG_TIMEUNIT)) {
                 mTimeUnit = item.getInt(KEY_CONFIG_THEME);
                 mTimeUnitSwitch.setChecked(mTimeUnit == TIMEUNIT12);
             }
 
-            if (item.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)) {
-                int interval = item.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
-                String[] names = getResources().getStringArray(R.array.interval_array);
-                for (int i = 0; i < names.length; i++) {
-                    if (convertTimeStringToInt(names[i]) == interval) {
-                        mIntervalSpinner.setSelection(i);
-                        break;
-                    }
-                }
-            }
+
         }
 
         mTimeUnitSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -88,67 +62,30 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
             }
         });
 
-        mScaleRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                DataMap config = new DataMap();
-                config.putInt(KEY_CONFIG_TEMPERATURE_SCALE, checkedId == R.id.fahrenheitRadioButton ? 0 : 1);
-                sendConfigUpdateMessage(config);
-            }
-        });
 
-        mIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                int interval = convertTimeStringToInt((String) adapterView.getItemAtPosition(position));
 
-                if (interval != 0) {
-                    DataMap map = new DataMap();
-                    map.putInt(KEY_CONFIG_REQUIRE_INTERVAL, interval);
-                    sendConfigUpdateMessage(map);
-                }
-            }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
 
-        onColorViewClick.onClick(mColorButtonContainer.getChildAt(mTheme - 1));
         }
     };
 
-    View.OnClickListener onColorViewClick =new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            mTheme = (int) v.getTag();
-            for (int j = 0; j < mColorButtonContainer.getChildCount(); j++) {
-                mColorButtonContainer.getChildAt(j).setActivated(false);
-            }
-            v.setActivated(true);
-            changeTheme();
-        }
-    };
+
 
     private GoogleApiClient mGoogleApiClient;
 
-    @InjectView(R.id.preview_image)
-    private ImageView mPreviewImage;
 
-    @InjectView(R.id.scaleRadioGroup)
-    private RadioGroup mScaleRadioGroup;
 
-    @InjectView(R.id.intervalSpinner)
+
     private Spinner mIntervalSpinner;
     private String mPeerId;
 
-    @InjectView(R.id.switch_time_unit)
+    @InjectView(com.swarmnyc.watchfaces.esther.R.id.switch_time_unit)
     private Switch mTimeUnitSwitch;
 
-    @InjectView(R.id.colorbutton_container)
-    private ViewGroup mColorButtonContainer;
 
-    @InjectView(R.id.view_logo)
+
+
+    @InjectView(com.swarmnyc.watchfaces.esther.R.id.view_logo)
     private View mLogo;
 
     private int mTheme = 3;
@@ -174,13 +111,13 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
         Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
                 .setResultCallback(getDataCallback);
 
-        initColorButton();
+
 
         mLogo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(Uri.parse(getResources().getString(R.string.company_url)));
+                intent.setData(Uri.parse(getResources().getString(com.swarmnyc.watchfaces.esther.R.string.company_url)));
                 startActivity(intent);
             }
         });
@@ -217,36 +154,9 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
         return interval;
     }
 
-    private void changeTheme() {
-        int id = this.getResources().getIdentifier("weather_preview_" + (mTheme), "drawable", WeatherWatchFaceConfigActivity.class.getPackage().getName());
-        mPreviewImage.setImageResource(id);
 
-        DataMap dataMap = new DataMap();
-        dataMap.putInt(KEY_CONFIG_THEME, mTheme);
-        sendConfigUpdateMessage(dataMap);
-    }
 
-    private void initColorButton() {
-        mColorButtonContainer.getViewTreeObserver()
-                .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        mColorButtonContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        int count = mColorButtonContainer.getChildCount();
-                        int size = mColorButtonContainer.getMeasuredWidth() / (count + 1);
-                        int margin = size / (count + 1);
-                        for (int i = 0; i < count; i++) {
-                            View view = mColorButtonContainer.getChildAt(i);
-                            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
-                            lp.width = size;
-                            lp.height = size;
-                            lp.leftMargin = margin;
-                            view.setTag(i + 1);
-                            view.setOnClickListener(onColorViewClick);
-                        }
-                    }
-                });
-    }
+
 
     private void sendConfigUpdateMessage(DataMap config) {
         if (mPeerId != null) {

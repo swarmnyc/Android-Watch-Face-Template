@@ -1,10 +1,8 @@
-package com.swarmnyc.watchfaces;
-
-import android.content.Context;
+package com.swarmnyc.watchfaces.esther;
 
 import com.google.inject.AbstractModule;
-import com.swarmnyc.watchfaces.weather.IWeatherApi;
-import com.swarmnyc.watchfaces.weather.openweather.OpenWeatherApi;
+import com.swarmnyc.watchfaces.esther.IWeatherApi;
+import com.swarmnyc.watchfaces.esther.openweather.OpenWeatherApi;
 
 public class AppModule extends AbstractModule {
     //private Context mContext;

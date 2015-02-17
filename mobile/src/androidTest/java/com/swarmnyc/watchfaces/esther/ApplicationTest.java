@@ -1,4 +1,4 @@
-package com.swarmnyc.watchfaces;
+package com.swarmnyc.watchfaces.esther;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

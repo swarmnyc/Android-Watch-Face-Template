@@ -1,4 +1,4 @@
-package com.swarmnyc.watchfaces;
+package com.swarmnyc.watchfaces.esther;
 
 public class ConverterUtil {
     public static final String CELSIUS_STRING = "°C";

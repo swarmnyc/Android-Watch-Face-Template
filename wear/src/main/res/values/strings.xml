@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">SWARM Watch Faces</string>
-    <string name="weather_time_font">fonts/Runway Caps.otf</string>
-    <string name="weather_date_font">fonts/Runway Caps.otf</string>
-    <string name="weather_temperature_font">fonts/Schmalhans-ExtraBold.otf</string>
+    <string name="app_name">Esther by SWARM</string>
+    <string name="weather_time_font">fonts/Bebas-Regular.otf</string>
+    <string name="weather_date_font">fonts/Bebas-Regular.otf</string>
+    <string name="weather_temperature_font">fonts/Bebas-Regular.otf</string>
     <string name="analog_name">SWARM Clock</string>
-    <string name="Weather_name">SWARM Weather</string>
+    <string name="Weather_name">Esther by SWARM</string>
 </resources>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.swarmnyc.watchfaces" >
+    package="com.swarmnyc.watchfaces.esther" >
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -11,24 +11,20 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
 
-        <service android:name=".WeatherService" >
-            <intent-filter>
-                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
-            </intent-filter>
-        </service>
+
 
         <activity
             android:name=".WeatherWatchFaceConfigActivity"
             android:label="@string/title_activity_weather_watch_face_config"
             android:theme="@style/ConfigTheme">
             <intent-filter>
-                <action android:name="com.swarmnyc.watchfaces.CONFIG_WEATHER" />
+                <action android:name="com.swarmnyc.watchfaces.esther.CONFIG_WEATHER" />
                 <category android:name="com.google.android.wearable.watchface.category.COMPANION_CONFIGURATION" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
-        <meta-data android:name="roboguice.annotations.packages" android:value="com.swarmnyc.watchfaces" />
-        <meta-data android:name="roboguice.modules" android:value="com.swarmnyc.watchfaces.AppModule" />
+        <meta-data android:name="roboguice.annotations.packages" android:value="com.swarmnyc.watchfaces.esther" />
+        <meta-data android:name="roboguice.modules" android:value="com.swarmnyc.watchfaces.esther.AppModule" />
     </application>
 </manifest>

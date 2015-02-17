@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.swarmnyc.watchfaces">
+    package="com.swarmnyc.watchfaces.esther">
     <uses-sdk android:minSdkVersion="21"
         android:targetSdkVersion="21" />
     <uses-feature android:name="android.hardware.type.watch" />
@@ -12,7 +12,7 @@
         android:icon="@drawable/ic_launcher">
 
         <service
-            android:name=".WeatherWatchFaceService"
+            android:name="com.swarmnyc.watchfaces.esther.WeatherWatchFaceService"
             android:label="@string/Weather_name"
             android:allowEmbedded="true"
             android:taskAffinity=""
@@ -28,7 +28,7 @@
                 android:resource="@drawable/preview_weather_circular" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.companionConfigurationAction"
-                android:value="com.swarmnyc.watchfaces.CONFIG_WEATHER" />
+                android:value="com.swarmnyc.watchfaces.esther.CONFIG_WEATHER" />
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
                 <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
