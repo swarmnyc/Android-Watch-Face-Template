@@ -26,4 +26,14 @@
     <dimen name="weather_temperature_suffix_size_round">7pt</dimen>
     <dimen name="weather_internal_distance">8dp</dimen>
     <dimen name="weather_internal_distance_round">10dp</dimen>
+
+    <dimen name="modern_time_size_round">28pt</dimen>
+    <dimen name="modern_time_size">28pt</dimen>
+    <dimen name="modern_date_size">7.5pt</dimen>
+    <dimen name="modern_date_size_round">8pt</dimen>
+    <dimen name="modern_temperature_size">8pt</dimen>
+    <dimen name="modern_temperature_size_round">9pt</dimen>
+    <dimen name="modern_temperature_suffix_size">6pt</dimen>
+    <dimen name="modern_temperature_suffix_size_round">7pt</dimen>
+    <dimen name="modern_temperature_picture_size">60dp</dimen>
 </resources>

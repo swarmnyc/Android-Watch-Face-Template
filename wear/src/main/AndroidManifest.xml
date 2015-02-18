@@ -12,7 +12,7 @@
 
         <service
             android:name=".WeatherWatchFaceService"
-            android:label="@string/Weather_name"
+            android:label="@string/name_WeatherWatchFace"
             android:allowEmbedded="true"
             android:taskAffinity=""
             android:permission="android.permission.BIND_WALLPAPER" >
@@ -25,6 +25,29 @@
             <meta-data
                 android:name="com.google.android.wearable.watchface.preview_circular"
                 android:resource="@drawable/preview_weather_circular" />
+            <meta-data
+                android:name="com.google.android.wearable.watchface.companionConfigurationAction"
+                android:value="com.swarmnyc.watchfaces.CONFIG_WEATHER" />
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+                <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".ModernWeatherWatchFaceService"
+            android:label="@string/name_ModernWatchFace"
+            android:allowEmbedded="true"
+            android:taskAffinity=""
+            android:permission="android.permission.BIND_WALLPAPER" >
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/watch_face" />
+            <meta-data
+                android:name="com.google.android.wearable.watchface.preview"
+                android:resource="@drawable/preview_modern" />
+            <meta-data
+                android:name="com.google.android.wearable.watchface.preview_circular"
+                android:resource="@drawable/preview_modern_circular" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.companionConfigurationAction"
                 android:value="com.swarmnyc.watchfaces.CONFIG_WEATHER" />
