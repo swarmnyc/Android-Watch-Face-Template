@@ -37,88 +37,89 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
     public static final String KEY_CONFIG_THEME = "Theme";
     public static final String KEY_CONFIG_TIMEUNIT = "TimeUnit";
-    public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
     private static final String TAG = "WeatherWatchFaceConfigActivity";
+    public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
+    public static final String PATH_MODERN_CONFIG = "/ModernWeatherWatchFace/Config";
     private static final int TIMEUNIT12 = 0;
     private static final int TIMEUNIT24 = 1;
-    
+
     ResultCallback<DataApi.DataItemResult> getDataCallback = new ResultCallback<DataApi.DataItemResult>() {
-    @Override
-    public void onResult(DataApi.DataItemResult result) {
-        if (result.getStatus().isSuccess() && result.getDataItem() != null) {
-            DataMap item = DataMapItem.fromDataItem(result.getDataItem()).getDataMap();
-            if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
-                if (item.getInt(KEY_CONFIG_TEMPERATURE_SCALE) == 1) {
-                    mScaleRadioGroup.check(R.id.celsiusRadioButton);
+        @Override
+        public void onResult(DataApi.DataItemResult result) {
+            if (result.getStatus().isSuccess() && result.getDataItem() != null) {
+                DataMap item = DataMapItem.fromDataItem(result.getDataItem()).getDataMap();
+                if (item.containsKey(KEY_CONFIG_TEMPERATURE_SCALE)) {
+                    if (item.getInt(KEY_CONFIG_TEMPERATURE_SCALE) == 1) {
+                        mScaleRadioGroup.check(R.id.celsiusRadioButton);
+                    } else {
+                        mScaleRadioGroup.check(R.id.fahrenheitRadioButton);
+                    }
                 } else {
                     mScaleRadioGroup.check(R.id.fahrenheitRadioButton);
                 }
-            } else {
-                mScaleRadioGroup.check(R.id.fahrenheitRadioButton);
-            }
 
-            if (item.containsKey(KEY_CONFIG_THEME)) {
-                mTheme = item.getInt(KEY_CONFIG_THEME);
-            }
+                if (item.containsKey(KEY_CONFIG_THEME)) {
+                    mTheme = item.getInt(KEY_CONFIG_THEME);
+                }
 
-            if (item.containsKey(KEY_CONFIG_TIMEUNIT)) {
-                mTimeUnit = item.getInt(KEY_CONFIG_THEME);
-                mTimeUnitSwitch.setChecked(mTimeUnit == TIMEUNIT12);
-            }
+                if (item.containsKey(KEY_CONFIG_TIMEUNIT)) {
+                    mTimeUnit = item.getInt(KEY_CONFIG_TIMEUNIT);
+                    mTimeUnitSwitch.setChecked(mTimeUnit == TIMEUNIT12);
+                }
 
-            if (item.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)) {
-                int interval = item.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
-                String[] names = getResources().getStringArray(R.array.interval_array);
-                for (int i = 0; i < names.length; i++) {
-                    if (convertTimeStringToInt(names[i]) == interval) {
-                        mIntervalSpinner.setSelection(i);
-                        break;
+                if (item.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)) {
+                    int interval = item.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
+                    String[] names = getResources().getStringArray(R.array.interval_array);
+                    for (int i = 0; i < names.length; i++) {
+                        if (convertTimeStringToInt(names[i]) == interval) {
+                            mIntervalSpinner.setSelection(i);
+                            break;
+                        }
                     }
                 }
             }
-        }
 
-        mTimeUnitSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mTimeUnit = isChecked ? TIMEUNIT12 : TIMEUNIT24;
-                DataMap config = new DataMap();
-                config.putInt(KEY_CONFIG_TIMEUNIT, mTimeUnit);
-                sendConfigUpdateMessage(config);
-            }
-        });
-
-        mScaleRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                DataMap config = new DataMap();
-                config.putInt(KEY_CONFIG_TEMPERATURE_SCALE, checkedId == R.id.fahrenheitRadioButton ? 0 : 1);
-                sendConfigUpdateMessage(config);
-            }
-        });
-
-        mIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                int interval = convertTimeStringToInt((String) adapterView.getItemAtPosition(position));
-
-                if (interval != 0) {
-                    DataMap map = new DataMap();
-                    map.putInt(KEY_CONFIG_REQUIRE_INTERVAL, interval);
-                    sendConfigUpdateMessage(map);
+            mTimeUnitSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    mTimeUnit = isChecked ? TIMEUNIT12 : TIMEUNIT24;
+                    DataMap config = new DataMap();
+                    config.putInt(KEY_CONFIG_TIMEUNIT, mTimeUnit);
+                    sendConfigUpdateMessage(config);
                 }
-            }
+            });
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
+            mScaleRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(RadioGroup group, int checkedId) {
+                    DataMap config = new DataMap();
+                    config.putInt(KEY_CONFIG_TEMPERATURE_SCALE, checkedId == R.id.fahrenheitRadioButton ? 0 : 1);
+                    sendConfigUpdateMessage(config);
+                }
+            });
 
-        onColorViewClick.onClick(mColorButtonContainer.getChildAt(mTheme - 1));
+            mIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                    int interval = convertTimeStringToInt((String) adapterView.getItemAtPosition(position));
+
+                    if (interval != 0) {
+                        DataMap map = new DataMap();
+                        map.putInt(KEY_CONFIG_REQUIRE_INTERVAL, interval);
+                        sendConfigUpdateMessage(map);
+                    }
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                }
+            });
+
+            onColorViewClick.onClick(mColorButtonContainer.getChildAt(mTheme - 1));
         }
     };
 
-    View.OnClickListener onColorViewClick =new View.OnClickListener() {
+    View.OnClickListener onColorViewClick = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             mTheme = (int) v.getTag();
@@ -153,12 +154,23 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
 
     private int mTheme = 3;
     private int mTimeUnit = TIMEUNIT12;
+    private String mSource;
+    private String mConfigPath = "/Config";
 
 // -------------------------- OTHER METHODS --------------------------
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mSource = getIntent().getAction();
+        if (mSource.endsWith("MODERN")) {
+            mSource="modern";
+            mConfigPath = PATH_MODERN_CONFIG;
+        } else {
+            mSource="weather";
+            mConfigPath = PATH_CONFIG;
+        }
 
         mPeerId = getIntent().getStringExtra(WatchFaceCompanion.EXTRA_PEER_ID);
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -167,7 +179,7 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
 
         Uri uri = new Uri.Builder()
                 .scheme("wear")
-                .path(PATH_CONFIG)
+                .path(mConfigPath)
                 .authority(mPeerId)
                 .build();
 
@@ -218,7 +230,7 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     }
 
     private void changeTheme() {
-        int id = this.getResources().getIdentifier("weather_preview_" + (mTheme), "drawable", WeatherWatchFaceConfigActivity.class.getPackage().getName());
+        int id = this.getResources().getIdentifier(mSource + "_preview_" + (mTheme), "drawable", WeatherWatchFaceConfigActivity.class.getPackage().getName());
         mPreviewImage.setImageResource(id);
 
         DataMap dataMap = new DataMap();
@@ -251,7 +263,7 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     private void sendConfigUpdateMessage(DataMap config) {
         if (mPeerId != null) {
             Log.d(TAG, "Sending Config: " + config);
-            Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray())
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, mConfigPath, config.toByteArray())
                     .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                         @Override
                         public void onResult(MessageApi.SendMessageResult sendMessageResult) {

@@ -50,9 +50,9 @@
                 android:resource="@drawable/preview_modern_circular" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.companionConfigurationAction"
-                android:value="com.swarmnyc.watchfaces.CONFIG_WEATHER" />
+                android:value="com.swarmnyc.watchfaces.CONFIG_MODERN" />
             <intent-filter>
-                <action android:name="android.service.wallpaper.WallpaperService" />
+                <action android:name="android.service.wallpaper.WallpaperService"  />
                 <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
             </intent-filter>
         </service>

@@ -35,5 +35,5 @@
     <dimen name="modern_temperature_size_round">9pt</dimen>
     <dimen name="modern_temperature_suffix_size">6pt</dimen>
     <dimen name="modern_temperature_suffix_size_round">7pt</dimen>
-    <dimen name="modern_temperature_picture_size">60dp</dimen>
+    <dimen name="modern_temperature_picture_size">50dp</dimen>
 </resources>

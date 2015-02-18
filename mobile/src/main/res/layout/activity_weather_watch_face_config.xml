@@ -21,7 +21,7 @@
             android:id="@+id/preview_image"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/weather_preview_3"
+            tools:src="@drawable/weather_preview_3"
             android:layout_gravity="center_horizontal"
             android:layout_margin="@dimen/main_margin"
             android:contentDescription="@string/preview_image" />

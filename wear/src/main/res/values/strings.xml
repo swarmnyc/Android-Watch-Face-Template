@@ -8,6 +8,6 @@
     <string name="modern_date_font">fonts/AkzidenzGrotesk-LightCond.otf</string>
     <string name="modern_temperature_font">fonts/AkzidenzGrotesk-LightCond.otf</string>
 
-    <string name="name_WeatherWatchFace">SWARM Weather</string>
-    <string name="name_ModernWatchFace">SWARM Modern</string>
+    <string name="name_WeatherWatchFace">SWARM Runner</string>
+    <string name="name_ModernWatchFace">SWARM Slim</string>
 </resources>

@@ -72,7 +72,7 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
         public static final String KEY_CONFIG_THEME = "Theme";
         public static final String KEY_CONFIG_TIME_UNIT = "TimeUnit";
         public static final String KEY_WEATHER_TEMPERATURE = "Temperature";
-        public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
+        public static final String PATH_CONFIG = "/ModernWeatherWatchFace/Config";
         public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
         public static final String PATH_WEATHER_REQUIRE = "/WeatherService/Require";
         public static final int TIME_DATE_DISTANCE = 5;
@@ -137,7 +137,6 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
         boolean mLowBitAmbient;
         boolean mRegisteredService = false;
         float mColonXOffset;
-        float mDateSuffixYOffset;
         float mDateYOffset;
         float mDebugInfoYOffset;
         float mTemperatureSuffixYOffset;
@@ -150,9 +149,13 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
         int mTemperatureScale;
         long mWeatherInfoReceivedTime;
         long mWeatherInfoRequiredTime;
-        private int mTheme = 3;
-        private float mTemperature_picture_size;
-        private int mTimeUnit =  ConverterUtil.TIME_UNIT_12;
+        int mTheme = 3;
+        float mTemperature_picture_size;
+        int mTimeUnit =  ConverterUtil.TIME_UNIT_12;
+        int mDateColor;
+        int mDateDefaultColor;
+        int mTemperatureColor;
+        int mTemperatureDefaultColor;
 
 // ------------------------ INTERFACE METHODS ------------------------
 
@@ -221,19 +224,25 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
             super.onAmbientModeChanged(inAmbientMode);
             log("onAmbientModeChanged: " + inAmbientMode);
 
-//            if (mLowBitAmbient) {
-//                boolean antiAlias = !inAmbientMode;
-//                mTimePaint.setAntiAlias(antiAlias);
-//                mDatePaint.setAntiAlias(antiAlias);
-//                mTemperaturePaint.setAntiAlias(antiAlias);
-//            }
+            if (mLowBitAmbient) {
+                boolean antiAlias = !inAmbientMode;
+                mTimePaint.setAntiAlias(antiAlias);
+                mDatePaint.setAntiAlias(antiAlias);
+                mTemperaturePaint.setAntiAlias(antiAlias);
+                mTemperatureSuffixPaint.setAntiAlias(antiAlias);
+            }
 
             if (inAmbientMode) {
                 mBackgroundPaint.setColor(mBackgroundDefaultColor);
+                mDatePaint.setColor(mDateDefaultColor);
+                mTemperaturePaint.setColor(mTemperatureDefaultColor);
+                mTemperatureSuffixPaint.setColor(mTemperatureDefaultColor);
             } else {
                 mBackgroundPaint.setColor(mBackgroundColor);
+                mDatePaint.setColor(mDateColor);
+                mTemperaturePaint.setColor(mTemperatureColor);
+                mTemperatureSuffixPaint.setColor(mTemperatureColor);
             }
-
 
             invalidate();
 
@@ -296,10 +305,13 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
             Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.modern_date_font));
             Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.modern_temperature_font));
 
+            mDateColor = mDateDefaultColor = mResources.getColor(R.color.modern_date_color);
+            mTemperatureColor = mTemperatureDefaultColor = mResources.getColor(R.color.modern_temperature_color);
+
             mTimePaint = createTextPaint(mResources.getColor(R.color.modern_time_color), timeFont);
-            mDatePaint = createTextPaint(mResources.getColor(R.color.modern_date_color), dateFont);
-            mTemperaturePaint = createTextPaint(mResources.getColor(R.color.modern_temperature_color), tempFont);
-            mTemperatureSuffixPaint = createTextPaint(mResources.getColor(R.color.modern_temperature_color), tempFont);
+            mDatePaint = createTextPaint(mDateColor, dateFont);
+            mTemperaturePaint = createTextPaint(mTemperatureColor, tempFont);
+            mTemperatureSuffixPaint = createTextPaint(mTemperatureColor, tempFont);
 
             mTemperature_picture_size = mResources.getDimension(R.dimen.modern_temperature_picture_size);
 
@@ -341,8 +353,8 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
             String minString = String.format("%02d", mTime.minute);
 
             //For Test
-//            hourString = "12";
-//            minString = "30";
+            hourString = "12";
+            minString = "30";
 //            mTemperature = 50;
 //            mWeatherCondition = "clear";
 //            mWeatherInfoReceivedTime = System.currentTimeMillis();
@@ -400,8 +412,8 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
 
                         Drawable b = mResources.getDrawable(id);
                         mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();
-                        float sizeScale = mTemperature_picture_size / mWeatherConditionDrawable.getWidth() * mWeatherConditionDrawable.getWidth();
-                        mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int)mTemperature_picture_size, (int)sizeScale, true);
+                        float scaledWidth = (mTemperature_picture_size / mWeatherConditionDrawable.getWidth()) * mWeatherConditionDrawable.getWidth();
+                        mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int)scaledWidth,(int)mTemperature_picture_size, true);
                     }
 
                     canvas.drawBitmap(mWeatherConditionDrawable, radius - mWeatherConditionDrawable.getWidth() / 2, height - mWeatherConditionDrawable.getHeight(), null);
@@ -552,8 +564,14 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
                 mTheme = config.getInt(KEY_CONFIG_THEME);
 
                 mBackgroundColor = mResources.getColor(mResources.getIdentifier("modern_theme_" + mTheme + "_bg", "color", PACKAGE_NAME));
+                mDateColor = mResources.getColor(mResources.getIdentifier("modern_theme_" + mTheme + "_date", "color", PACKAGE_NAME));
+                mTemperatureColor = mResources.getColor(mResources.getIdentifier("modern_theme_" + mTheme + "_temperature", "color", PACKAGE_NAME));
+
                 if (!isInAmbientMode()) {
                     mBackgroundPaint.setColor(mBackgroundColor);
+                    mDatePaint.setColor(mDateColor);
+                    mTemperaturePaint.setColor(mTemperatureColor);
+                    mTemperatureSuffixPaint.setColor(mTemperatureColor);
                 }
             }
 
