@@ -76,11 +76,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
         public static final String PATH_WEATHER_REQUIRE = "/WeatherService/Require";
         private static final String COLON_STRING = ":";
-        private static final int TIMEUNIT12 = 0;
-        private static final int TIMEUNIT24 = 1;
         private static final int MSG_UPDATE_TIME = 0;
         private int mTheme = 3;
-        private int mTimeUnit = TIMEUNIT12;
+        private int mTimeUnit = ConverterUtil.TIME_UNIT_12;
 
         private static final long UPDATE_RATE_MS = 1000;
         private static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 6;
@@ -362,7 +360,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawRect(0, 0, width, height, mBackgroundPaint);
 
             // Time
-            String hourString = String.format("%02d", convertHour(mTime.hour));
+            String hourString = String.format("%02d", ConverterUtil.convertHour(mTime.hour, mTimeUnit));
             String minString = String.format("%02d", mTime.minute);
 
             //For Test
@@ -395,9 +393,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             y += mDatePaint.getTextSize() + mInternalDistance + mDateYOffset;
 
             //Date
-            String monthString = convertToMonth(mTime.month);
+            String monthString = ConverterUtil.convertToMonth(mTime.month);
             String dayString = String.valueOf(mTime.monthDay);
-            String daySuffixString = getDaySuffix(mTime.monthDay);
+            String daySuffixString = ConverterUtil.getDaySuffix(mTime.monthDay);
 
             float monthWidth = mDatePaint.measureText(monthString);
             float dayWidth = mDatePaint.measureText(dayString);
@@ -444,14 +442,18 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
 
                 //temperature
-                if (mTemperature != Integer.MAX_VALUE) {
+                if (mTemperature != Integer.MAX_VALUE && !(isRound && hasPeekCard)) {
                     String temperatureString = String.valueOf(mTemperature);
                     String temperatureScaleString = mTemperatureScale == ConverterUtil.FAHRENHEIT ? ConverterUtil.FAHRENHEIT_STRING : ConverterUtil.CELSIUS_STRING;
                     float temperatureWidth = mTemperaturePaint.measureText(temperatureString);
                     float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(temperatureScaleString)) / 2;
                     float borderPadding = temperatureRadius * 0.5f;
                     x = radius;
-                    y = bounds.height() * (hasPeekCard ? 0.75f : 0.80f) - yOffset;
+                    if (hasPeekCard) {
+                        y = getPeekCardPosition().top - temperatureRadius - borderPadding - mTemperatureBorderPaint.getStrokeWidth()*2;
+                    }else {
+                        y = bounds.height() * 0.80f;
+                    }
 
                     suffixY = y - mTemperatureSuffixYOffset;
                     canvas.drawCircle(radius, y + borderPadding / 2, temperatureRadius + borderPadding, mTemperatureBorderPaint);
@@ -540,59 +542,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             return paint;
         }
 
-        private String convertToMonth(int month) {
-            switch (month) {
-                case 0:
-                    return "January ";
-                case 1:
-                    return "February ";
-                case 2:
-                    return "March ";
-                case 3:
-                    return "April ";
-                case 4:
-                    return "May ";
-                case 5:
-                    return "June ";
-                case 6:
-                    return "July ";
-                case 7:
-                    return "August ";
-                case 8:
-                    return "September ";
-                case 9:
-                    return "October ";
-                case 10:
-                    return "November ";
-                default:
-                    return "December";
-            }
-        }
-
-        private String getDaySuffix(int monthDay) {
-            switch (monthDay) {
-                case 1:
-                    return "st";
-                case 2:
-                    return "nd";
-                case 3:
-                    return "rd";
-                default:
-                    return "th";
-            }
-        }
-
         private boolean shouldUpdateTimerBeRunning() {
             return isVisible() && !isInAmbientMode();
-        }
-
-        private int convertHour(int hour) {
-            if (mTimeUnit == TIMEUNIT12) {
-                int result = hour % 12;
-                return (result == 0) ? 12 : result;
-            } else {
-                return hour;
-            }
         }
 
         private void fetchConfig(DataMap config) {
