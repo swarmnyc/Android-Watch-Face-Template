@@ -674,7 +674,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                         @Override
                         public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                            log("SendStartMessage:" + sendMessageResult.getStatus());
+                            log("SendRequireMessage:" + sendMessageResult.getStatus());
                         }
                     });
         }

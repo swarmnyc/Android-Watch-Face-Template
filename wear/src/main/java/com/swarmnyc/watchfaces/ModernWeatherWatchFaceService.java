@@ -353,8 +353,8 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
             String minString = String.format("%02d", mTime.minute);
 
             //For Test
-            hourString = "12";
-            minString = "30";
+//            hourString = "12";
+//            minString = "30";
 //            mTemperature = 50;
 //            mWeatherCondition = "clear";
 //            mWeatherInfoReceivedTime = System.currentTimeMillis();
@@ -412,7 +412,7 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
 
                         Drawable b = mResources.getDrawable(id);
                         mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();
-                        float scaledWidth = (mTemperature_picture_size / mWeatherConditionDrawable.getWidth()) * mWeatherConditionDrawable.getWidth();
+                        float scaledWidth = (mTemperature_picture_size / mWeatherConditionDrawable.getHeight()) * mWeatherConditionDrawable.getWidth();
                         mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int)scaledWidth,(int)mTemperature_picture_size, true);
                     }
 
@@ -653,7 +653,7 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
                     .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                         @Override
                         public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                            log("SendStartMessage:" + sendMessageResult.getStatus());
+                            log("SendRequireMessage:" + sendMessageResult.getStatus());
                         }
                     });
         }
