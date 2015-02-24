@@ -4,7 +4,7 @@ This is a basic framework we used to build the SWARM watach faces in the Google 
 
 The tutorial follows four parts. <br>
 
-Part 1 – <a href="http://swarmnyc.com/whiteboard/android-wear-watch-face-overview/">Overview & Drawing a watch face</a><br>
+Part 1 – <a href="http://swarmnyc.com/?p=1294">Overview & Drawing a watch face</a><br>
 Part 2 – System UI requirements for the watch face<br>
 Part 3 – Real-time weather communication<br>
 Part 4 – Packaging and publishing the watch face<br>
