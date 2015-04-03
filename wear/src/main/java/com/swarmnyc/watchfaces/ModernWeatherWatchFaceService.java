@@ -72,7 +72,8 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
         public static final String KEY_CONFIG_THEME = "Theme";
         public static final String KEY_CONFIG_TIME_UNIT = "TimeUnit";
         public static final String KEY_WEATHER_TEMPERATURE = "Temperature";
-        public static final String PATH_CONFIG = "/ModernWeatherWatchFace/Config";
+        public static final String KEY_WEATHER_UPDATE_TIME = "Update_Time";
+        public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
         public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
         public static final String PATH_WEATHER_REQUIRE = "/WeatherService/Require";
         public static final int TIME_DATE_DISTANCE = 5;
@@ -84,6 +85,7 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
          */
         private static final long UPDATE_RATE_MS = 500;
         private static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 4;
+
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -181,6 +183,7 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onMessageReceived(MessageEvent messageEvent) {
+            //TODO: Add a service listener to receive message
             byte[] rawData = messageEvent.getData();
             DataMap dataMap = DataMap.fromByteArray(rawData);
             log("onMessageReceived: " + dataMap);
@@ -191,9 +194,8 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
                 mWeatherInfoReceivedTime = System.currentTimeMillis();
             }
 
-            if (messageEvent.getPath().equals(PATH_CONFIG)) {
-                saveConfig();
-            }
+
+            saveConfig();
         }
 
 // --------------------- Interface NodeListener ---------------------
@@ -520,6 +522,10 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
         }
 
         private void fetchConfig(DataMap config) {
+            if (config.containsKey(KEY_WEATHER_UPDATE_TIME)) {
+                mWeatherInfoReceivedTime = config.getLong(KEY_WEATHER_UPDATE_TIME);
+            }
+
             if (config.containsKey(KEY_WEATHER_CONDITION)) {
                 String cond = config.getString(KEY_WEATHER_CONDITION);
                 if (TextUtils.isEmpty(cond)) {
@@ -661,6 +667,12 @@ public class ModernWeatherWatchFaceService extends CanvasWatchFaceService {
         private void saveConfig() {
             PutDataMapRequest putDataMapRequest = PutDataMapRequest.create(PATH_CONFIG);
             DataMap config = putDataMapRequest.getDataMap();
+
+            config.putLong(KEY_WEATHER_UPDATE_TIME, mWeatherInfoReceivedTime);
+            config.putString(KEY_WEATHER_CONDITION, mWeatherCondition);
+            config.putInt(KEY_WEATHER_TEMPERATURE, mTemperature);
+            config.putLong(KEY_WEATHER_SUNRISE, mSunriseTime.toMillis(false) / 1000);
+            config.putLong(KEY_WEATHER_SUNSET, mSunsetTime.toMillis(false) / 1000);
 
             config.putInt(KEY_CONFIG_TEMPERATURE_SCALE, mTemperatureScale);
             config.putInt(KEY_CONFIG_THEME, mTheme);
