@@ -50,8 +50,20 @@ public class WeatherWatchFaceService extends WeatherWatchFaceServiceBase {
     }
 
     private class Engine extends WeatherWatchFaceEngine {
+        protected float mColonXOffset;
+        protected float mDateSuffixYOffset;
+        protected float mDateYOffset;
+        protected float mDebugInfoYOffset;
+        protected float mInternalDistance;
+        protected float mTemperatureSuffixYOffset;
+        protected float mTemperatureYOffset;
+        protected float mTimeXOffset;
+        protected float mTimeYOffset;
+
         public Engine(WatchFaceService service) {
             super(service);
+
+            UPDATE_RATE_MS = 1000;
         }
 
         @Override

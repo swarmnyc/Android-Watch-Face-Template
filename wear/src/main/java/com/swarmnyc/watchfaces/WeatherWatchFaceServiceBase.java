@@ -47,7 +47,7 @@ public abstract class WeatherWatchFaceServiceBase extends CanvasWatchFaceService
 
         private String PACKAGE_NAME = WeatherWatchFaceEngine.class.getPackage().getName();
         protected static final int MSG_UPDATE_TIME = 0;
-        protected static final long UPDATE_RATE_MS = 1000;
+        protected long UPDATE_RATE_MS;
         protected static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 6;
         protected final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
@@ -67,6 +67,8 @@ public abstract class WeatherWatchFaceServiceBase extends CanvasWatchFaceService
                         invalidate();
 
                         if (shouldUpdateTimerBeRunning()) {
+                            long timeMs = System.currentTimeMillis();
+                            long delayMs = UPDATE_RATE_MS - (timeMs % UPDATE_RATE_MS);
                             mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, UPDATE_RATE_MS);
                             requireWeatherInfo();
                         }
@@ -96,15 +98,7 @@ public abstract class WeatherWatchFaceServiceBase extends CanvasWatchFaceService
         protected boolean isRound;
         protected boolean mLowBitAmbient;
         protected boolean mRegisteredService = false;
-        protected float mColonXOffset;
-        protected float mDateSuffixYOffset;
-        protected float mDateYOffset;
-        protected float mDebugInfoYOffset;
-        protected float mInternalDistance;
-        protected float mTemperatureSuffixYOffset;
-        protected float mTemperatureYOffset;
-        protected float mTimeXOffset;
-        protected float mTimeYOffset;
+
         protected int mBackgroundColor;
         protected int mBackgroundDefaultColor;
         protected int mRequireInterval;
