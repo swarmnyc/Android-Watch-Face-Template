@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="runner_weather_bg_color">#000</color>
-    <color name="runner_weather_time_color">#fff</color>
-    <color name="runner_weather_date_color">#fff</color>
-    <color name="runner_weather_temperature_color">#fff</color>
-    <color name="runner_weather_temperature_border_color">#fff</color>
+    <color name="runner_bg_color">#000</color>
+    <color name="runner_time_color">#fff</color>
+    <color name="runner_date_color">#fff</color>
+    <color name="runner_temperature_color">#fff</color>
+    <color name="runner_temperature_border_color">#fff</color>
 
-    <color name="runner_weather_theme_1_bg">#e55337</color>
-    <color name="runner_weather_theme_2_bg">#14b6cf</color>
-    <color name="runner_weather_theme_3_bg">#050707</color>
-    <color name="runner_weather_theme_4_bg">#293b8f</color>
+    <color name="runner_theme_1_bg">#e55337</color>
+    <color name="runner_theme_2_bg">#14b6cf</color>
+    <color name="runner_theme_3_bg">#050707</color>
+    <color name="runner_theme_4_bg">#293b8f</color>
 
 
     <color name="slim_bg_color">#000</color>

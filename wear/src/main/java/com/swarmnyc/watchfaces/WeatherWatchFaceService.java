@@ -52,6 +52,8 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
         protected final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                //Time zone changed
+                mWeatherInfoReceivedTime = 0;
                 mTime.clear(intent.getStringExtra("time-zone"));
                 mTime.setToNow();
             }
@@ -69,7 +71,7 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
                         if (shouldUpdateTimerBeRunning()) {
                             long timeMs = System.currentTimeMillis();
                             long delayMs = UPDATE_RATE_MS - (timeMs % UPDATE_RATE_MS);
-                            mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, UPDATE_RATE_MS);
+                            mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
                             requireWeatherInfo();
                         }
                         break;
@@ -182,7 +184,7 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
             mSunriseTime = new Time();
             mSunsetTime = new Time();
 
-            mRequireInterval = mResources.getInteger(R.integer.WeatherDefaultRequireInterval);
+            mRequireInterval = mResources.getInteger(R.integer.weather_default_require_interval);
 
             mGoogleApiClient.connect();
         }
@@ -354,7 +356,7 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
         }
 
         protected void registerTimeZoneService() {
-            //TimeZone and TemperatureSensor
+            //TimeZone
             if (mRegisteredService) {
                 return;
             }

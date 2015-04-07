@@ -1,12 +1,12 @@
 <resources>
     <string name="app_name">SWARM Watch Faces</string>
-    <string name="weather_time_font">fonts/Runway Caps.otf</string>
-    <string name="weather_date_font">fonts/Runway Caps.otf</string>
-    <string name="weather_temperature_font">fonts/Schmalhans-ExtraBold.otf</string>
+    <string name="runner_time_font">fonts/Runway Caps.otf</string>
+    <string name="runner_date_font">fonts/Runway Caps.otf</string>
+    <string name="runner_temperature_font">fonts/Schmalhans-ExtraBold.otf</string>
 
-    <string name="modern_time_font">fonts/AkzidenzGrotesk-LightCond.otf</string>
-    <string name="modern_date_font">fonts/AkzidenzGrotesk-LightCond.otf</string>
-    <string name="modern_temperature_font">fonts/AkzidenzGrotesk-LightCond.otf</string>
+    <string name="slim_time_font">fonts/AkzidenzGrotesk-LightCond.otf</string>
+    <string name="slim_date_font">fonts/AkzidenzGrotesk-LightCond.otf</string>
+    <string name="slim_temperature_font">fonts/AkzidenzGrotesk-LightCond.otf</string>
 
     <string name="name_WeatherWatchFace">SWARM Runner</string>
     <string name="name_ModernWatchFace">SWARM Slim</string>

@@ -14,26 +14,26 @@
  limitations under the License.
 -->
 <resources>
-    <dimen name="weather_time_size">18pt</dimen>
-    <dimen name="weather_time_size_round">20pt</dimen>
-    <dimen name="weather_date_size">6pt</dimen>
-    <dimen name="weather_date_size_round">6pt</dimen>
-    <dimen name="weather_date_suffix_size">4pt</dimen>
-    <dimen name="weather_date_suffix_size_round">4pt</dimen>
-    <dimen name="weather_temperature_size">8pt</dimen>
-    <dimen name="weather_temperature_size_round">8pt</dimen>
-    <dimen name="weather_temperature_suffix_size">5pt</dimen>
-    <dimen name="weather_temperature_suffix_size_round">7pt</dimen>
-    <dimen name="weather_internal_distance">8dp</dimen>
-    <dimen name="weather_internal_distance_round">10dp</dimen>
+    <dimen name="runner_time_size">18pt</dimen>
+    <dimen name="runner_time_size_round">20pt</dimen>
+    <dimen name="runner_date_size">6pt</dimen>
+    <dimen name="runner_date_size_round">6pt</dimen>
+    <dimen name="runner_date_suffix_size">4pt</dimen>
+    <dimen name="runner_date_suffix_size_round">4pt</dimen>
+    <dimen name="runner_temperature_size">8pt</dimen>
+    <dimen name="runner_temperature_size_round">8pt</dimen>
+    <dimen name="runner_temperature_suffix_size">5pt</dimen>
+    <dimen name="runner_temperature_suffix_size_round">7pt</dimen>
+    <dimen name="runner_internal_distance">8dp</dimen>
+    <dimen name="runner_internal_distance_round">10dp</dimen>
 
-    <dimen name="modern_time_size_round">28pt</dimen>
-    <dimen name="modern_time_size">28pt</dimen>
-    <dimen name="modern_date_size">7.5pt</dimen>
-    <dimen name="modern_date_size_round">8pt</dimen>
-    <dimen name="modern_temperature_size">8pt</dimen>
-    <dimen name="modern_temperature_size_round">9pt</dimen>
-    <dimen name="modern_temperature_suffix_size">6pt</dimen>
-    <dimen name="modern_temperature_suffix_size_round">7pt</dimen>
-    <dimen name="modern_temperature_picture_size">50dp</dimen>
+    <dimen name="slim_time_size_round">28pt</dimen>
+    <dimen name="slim_time_size">28pt</dimen>
+    <dimen name="slim_date_size">7.5pt</dimen>
+    <dimen name="slim_date_size_round">8pt</dimen>
+    <dimen name="slim_temperature_size">8pt</dimen>
+    <dimen name="slim_temperature_size_round">9pt</dimen>
+    <dimen name="slim_temperature_suffix_size">6pt</dimen>
+    <dimen name="slim_temperature_suffix_size_round">7pt</dimen>
+    <dimen name="slim_temperature_picture_size">50dp</dimen>
 </resources>

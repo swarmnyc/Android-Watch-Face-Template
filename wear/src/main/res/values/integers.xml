@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="weather_time_xoffset">-3</integer>
-    <integer name="weather_time_xoffset_round">-3</integer>
-    <integer name="weather_time_yoffset">15</integer>
-    <integer name="weather_time_yoffset_round">15</integer>
-    <integer name="WeatherDefaultRequireInterval">1800000</integer>
+    <integer name="runner_time_xoffset">-3</integer>
+    <integer name="runner_time_xoffset_round">-3</integer>
+    <integer name="runner_time_yoffset">15</integer>
+    <integer name="runner_time_yoffset_round">15</integer>
+    <integer name="weather_default_require_interval">1800000</integer>
 </resources>

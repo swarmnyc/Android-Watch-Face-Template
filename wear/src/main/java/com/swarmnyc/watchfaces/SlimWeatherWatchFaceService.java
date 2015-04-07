@@ -20,7 +20,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
     }
 
     private class Engine extends WeatherWatchFaceEngine {
-        private static final int TIME_DATE_DISTANCE = 5;
+        private static final int TIME_DATE_DISTANCE = 10;
         float mColonXOffset;
         float mDateYOffset;
         float mDebugInfoYOffset;
@@ -77,16 +77,16 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             isRound = insets.isRound();
 
             float timeTextSize = mResources.getDimension(isRound ?
-                    R.dimen.modern_time_size_round : R.dimen.modern_time_size);
+                    R.dimen.slim_time_size_round : R.dimen.slim_time_size);
 
             float dateTextSize = mResources.getDimension(isRound ?
-                    R.dimen.modern_date_size_round : R.dimen.modern_date_size);
+                    R.dimen.slim_date_size_round : R.dimen.slim_date_size);
 
             float tempTextSize = mResources.getDimension(isRound ?
-                    R.dimen.modern_temperature_size_round : R.dimen.modern_temperature_size);
+                    R.dimen.slim_temperature_size_round : R.dimen.slim_temperature_size);
 
             float tempSuffixTextSize = mResources.getDimension(isRound ?
-                    R.dimen.modern_temperature_suffix_size_round : R.dimen.modern_temperature_suffix_size);
+                    R.dimen.slim_temperature_suffix_size_round : R.dimen.slim_temperature_suffix_size);
 
             mTimePaint.setTextSize(timeTextSize);
             mDatePaint.setTextSize(dateTextSize);
@@ -109,9 +109,9 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(mBackgroundDefaultColor);
 
-            Typeface timeFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.modern_time_font));
-            Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.modern_date_font));
-            Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.modern_temperature_font));
+            Typeface timeFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.slim_time_font));
+            Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.slim_date_font));
+            Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.slim_temperature_font));
 
             mDateColor = mDateDefaultColor = mResources.getColor(R.color.slim_date_color);
             mTemperatureColor = mTemperatureDefaultColor = mResources.getColor(R.color.slim_temperature_color);
@@ -121,7 +121,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             mTemperaturePaint = createTextPaint(mTemperatureColor, tempFont);
             mTemperatureSuffixPaint = createTextPaint(mTemperatureColor, tempFont);
 
-            mTemperature_picture_size = mResources.getDimension(R.dimen.modern_temperature_picture_size);
+            mTemperature_picture_size = mResources.getDimension(R.dimen.slim_temperature_picture_size);
         }
 
         @Override
