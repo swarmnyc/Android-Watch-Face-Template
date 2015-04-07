@@ -13,6 +13,8 @@ import android.text.format.Time;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
+import com.google.android.gms.wearable.DataMap;
+
 public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
     @Override
     public Engine onCreateEngine() {
@@ -99,6 +101,23 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             mTemperatureYOffset = (mTemperaturePaint.descent() + mTemperaturePaint.ascent()) / 2;
             mTemperatureSuffixYOffset = (mTemperatureSuffixPaint.descent() + mTemperatureSuffixPaint.ascent()) / 2;
             mDebugInfoYOffset = 5 + mDebugInfoPaint.getTextSize() + (mDebugInfoPaint.descent() + mDebugInfoPaint.ascent()) / 2;
+        }
+
+        @Override
+        protected void fetchConfig(DataMap config) {
+            super.fetchConfig(config);
+            if (config.containsKey(Consts.KEY_CONFIG_THEME)) {
+                mBackgroundColor = mResources.getColor(mResources.getIdentifier("slim_theme_" + mTheme + "_bg", "color", Consts.PACKAGE_NAME));
+                mDateColor = mResources.getColor(mResources.getIdentifier("slim_theme_" + mTheme + "_date", "color",Consts.PACKAGE_NAME));
+                mTemperatureColor = mResources.getColor(mResources.getIdentifier("slim_theme_" + mTheme + "_temperature", "color", Consts.PACKAGE_NAME));
+
+                if (!isInAmbientMode()) {
+                    mBackgroundPaint.setColor(mBackgroundColor);
+                    mDatePaint.setColor(mDateColor);
+                    mTemperaturePaint.setColor(mTemperatureColor);
+                    mTemperatureSuffixPaint.setColor(mTemperatureColor);
+                }
+            }
         }
 
         @Override
@@ -203,7 +222,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
                     if (!name.equals(mWeatherConditionResourceName)) {
                         log("CreateScaledBitmap: " + name);
                         mWeatherConditionResourceName = name;
-                        int id = mResources.getIdentifier(name, "drawable", this.getClass().getPackage().getName());
+                        int id = mResources.getIdentifier(name, "drawable", Consts.PACKAGE_NAME);
 
                         Drawable b = mResources.getDrawable(id);
                         mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();

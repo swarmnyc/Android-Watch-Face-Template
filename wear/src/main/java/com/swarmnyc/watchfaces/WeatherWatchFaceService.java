@@ -45,7 +45,6 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
             GoogleApiClient.OnConnectionFailedListener,
             DataApi.DataListener, NodeApi.NodeListener {
 
-        private String PACKAGE_NAME = WeatherWatchFaceEngine.class.getPackage().getName();
         protected static final int MSG_UPDATE_TIME = 0;
         protected long UPDATE_RATE_MS;
         protected static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 6;
@@ -306,11 +305,6 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             if (config.containsKey(Consts.KEY_CONFIG_THEME)) {
                 mTheme = config.getInt(Consts.KEY_CONFIG_THEME);
-
-                mBackgroundColor = mResources.getColor(mResources.getIdentifier("weather_theme_" + mTheme + "_bg", "color", PACKAGE_NAME));
-                if (!isInAmbientMode()) {
-                    mBackgroundPaint.setColor(mBackgroundColor);
-                }
             }
 
             if (config.containsKey(Consts.KEY_CONFIG_TIME_UNIT)) {

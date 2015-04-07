@@ -13,6 +13,8 @@ import android.text.format.Time;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
+import com.google.android.gms.wearable.DataMap;
+
 public class RunnerWeatherWatchFaceService extends WeatherWatchFaceService {
     @Override
     public Engine onCreateEngine() {
@@ -131,6 +133,17 @@ public class RunnerWeatherWatchFaceService extends WeatherWatchFaceService {
         }
 
         @Override
+        protected void fetchConfig(DataMap config) {
+            super.fetchConfig(config);
+            if (config.containsKey(Consts.KEY_CONFIG_THEME)) {
+                mBackgroundColor = mResources.getColor(mResources.getIdentifier("runner_theme_" + mTheme + "_bg", "color", Consts.PACKAGE_NAME));
+                if (!isInAmbientMode()) {
+                    mBackgroundPaint.setColor(mBackgroundColor);
+                }
+            }
+        }
+
+        @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             //log("Draw");
             mTime.setToNow();
@@ -219,7 +232,7 @@ public class RunnerWeatherWatchFaceService extends WeatherWatchFaceService {
                     if (!name.equals(mWeatherConditionResourceName)) {
                         log("CreateScaledBitmap: " + name);
                         mWeatherConditionResourceName = name;
-                        int id = mResources.getIdentifier(name, "drawable", this.getClass().getPackage().getName());
+                        int id = mResources.getIdentifier(name, "drawable", Consts.PACKAGE_NAME);
 
                         Drawable b = mResources.getDrawable(id);
                         mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();

@@ -14,4 +14,5 @@ public class Consts {
     public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
     public static final String PATH_WEATHER_REQUIRE = "/WeatherService/Require";
     public static final String COLON_STRING = ":";
+    public static final String PACKAGE_NAME = Consts.class.getPackage().getName();
 }
