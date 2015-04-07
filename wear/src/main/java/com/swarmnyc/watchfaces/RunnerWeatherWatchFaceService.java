@@ -7,7 +7,6 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.support.wearable.watchface.WatchFaceService;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.text.format.Time;
@@ -39,13 +38,13 @@ public class RunnerWeatherWatchFaceService extends WeatherWatchFaceService {
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
-            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.weather_bg_color);
+            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.runner_weather_bg_color);
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(mBackgroundDefaultColor);
 
             mTemperatureBorderPaint = new Paint();
             mTemperatureBorderPaint.setStyle(Paint.Style.STROKE);
-            mTemperatureBorderPaint.setColor(mResources.getColor(R.color.weather_temperature_border_color));
+            mTemperatureBorderPaint.setColor(mResources.getColor(R.color.runner_weather_temperature_border_color));
             mTemperatureBorderPaint.setStrokeWidth(3f);
             mTemperatureBorderPaint.setAntiAlias(true);
 
@@ -53,11 +52,11 @@ public class RunnerWeatherWatchFaceService extends WeatherWatchFaceService {
             Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_date_font));
             Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_temperature_font));
 
-            mTimePaint = createTextPaint(mResources.getColor(R.color.weather_time_color), timeFont);
-            mDatePaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
-            mDateSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
-            mTemperaturePaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
-            mTemperatureSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
+            mTimePaint = createTextPaint(mResources.getColor(R.color.runner_weather_time_color), timeFont);
+            mDatePaint = createTextPaint(mResources.getColor(R.color.runner__weather_date_color), dateFont);
+            mDateSuffixPaint = createTextPaint(mResources.getColor(R.color.runner__weather_date_color), dateFont);
+            mTemperaturePaint = createTextPaint(mResources.getColor(R.color.runner_weather_temperature_color), tempFont);
+            mTemperatureSuffixPaint = createTextPaint(mResources.getColor(R.color.runner_weather_temperature_color), tempFont);
         }
 
         @Override

@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="weather_bg_color">#000</color>
-    <color name="weather_time_color">#fff</color>
-    <color name="weather_date_color">#fff</color>
-    <color name="weather_temperature_color">#fff</color>
-    <color name="weather_temperature_border_color">#fff</color>
+    <color name="runner_weather_bg_color">#000</color>
+    <color name="runner_weather_time_color">#fff</color>
+    <color name="runner_weather_date_color">#fff</color>
+    <color name="runner_weather_temperature_color">#fff</color>
+    <color name="runner_weather_temperature_border_color">#fff</color>
 
-    <color name="weather_theme_1_bg">#e55337</color>
-    <color name="weather_theme_2_bg">#14b6cf</color>
-    <color name="weather_theme_3_bg">#050707</color>
-    <color name="weather_theme_4_bg">#293b8f</color>
+    <color name="runner_weather_theme_1_bg">#e55337</color>
+    <color name="runner_weather_theme_2_bg">#14b6cf</color>
+    <color name="runner_weather_theme_3_bg">#050707</color>
+    <color name="runner_weather_theme_4_bg">#293b8f</color>
 
 
-    <color name="modern_bg_color">#000</color>
-    <color name="modern_time_color">#fff</color>
-    <color name="modern_date_color">#fff</color>
-    <color name="modern_temperature_color">#fff</color>
+    <color name="slim_bg_color">#000</color>
+    <color name="slim_time_color">#fff</color>
+    <color name="slim_date_color">#fff</color>
+    <color name="slim_temperature_color">#fff</color>
 
-    <color name="modern_theme_1_bg">#e55337</color>
-    <color name="modern_theme_2_bg">#14b6cf</color>
-    <color name="modern_theme_3_bg">#050707</color>
-    <color name="modern_theme_4_bg">#293b8f</color>
+    <color name="slim_theme_1_bg">#e55337</color>
+    <color name="slim_theme_2_bg">#14b6cf</color>
+    <color name="slim_theme_3_bg">#050707</color>
+    <color name="slim_theme_4_bg">#293b8f</color>
 
-    <color name="modern_theme_1_date">#fff</color>
-    <color name="modern_theme_2_date">#fff</color>
-    <color name="modern_theme_3_date">#999999</color>
-    <color name="modern_theme_4_date">#fff</color>
+    <color name="slim_theme_1_date">#fff</color>
+    <color name="slim_theme_2_date">#fff</color>
+    <color name="slim_theme_3_date">#999999</color>
+    <color name="slim_theme_4_date">#fff</color>
 
-    <color name="modern_theme_1_temperature">#fff</color>
-    <color name="modern_theme_2_temperature">#fff</color>
-    <color name="modern_theme_3_temperature">#999999</color>
-    <color name="modern_theme_4_temperature">#fff</color>
+    <color name="slim_theme_1_temperature">#fff</color>
+    <color name="slim_theme_2_temperature">#fff</color>
+    <color name="slim_theme_3_temperature">#999999</color>
+    <color name="slim_theme_4_temperature">#fff</color>
 </resources>

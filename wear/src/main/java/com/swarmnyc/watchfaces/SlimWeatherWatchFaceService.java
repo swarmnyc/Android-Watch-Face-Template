@@ -1,46 +1,17 @@
 package com.swarmnyc.watchfaces;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.res.AssetManager;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.support.wearable.watchface.CanvasWatchFaceService;
-import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.text.format.Time;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.wearable.DataApi;
-import com.google.android.gms.wearable.DataMap;
-import com.google.android.gms.wearable.DataMapItem;
-import com.google.android.gms.wearable.MessageApi;
-import com.google.android.gms.wearable.MessageEvent;
-import com.google.android.gms.wearable.Node;
-import com.google.android.gms.wearable.NodeApi;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.Wearable;
-
-import java.util.TimeZone;
 
 public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
     @Override
@@ -134,7 +105,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
-            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.modern_bg_color);
+            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.slim_bg_color);
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(mBackgroundDefaultColor);
 
@@ -142,10 +113,10 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.modern_date_font));
             Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.modern_temperature_font));
 
-            mDateColor = mDateDefaultColor = mResources.getColor(R.color.modern_date_color);
-            mTemperatureColor = mTemperatureDefaultColor = mResources.getColor(R.color.modern_temperature_color);
+            mDateColor = mDateDefaultColor = mResources.getColor(R.color.slim_date_color);
+            mTemperatureColor = mTemperatureDefaultColor = mResources.getColor(R.color.slim_temperature_color);
 
-            mTimePaint = createTextPaint(mResources.getColor(R.color.modern_time_color), timeFont);
+            mTimePaint = createTextPaint(mResources.getColor(R.color.slim_time_color), timeFont);
             mDatePaint = createTextPaint(mDateColor, dateFont);
             mTemperaturePaint = createTextPaint(mTemperatureColor, tempFont);
             mTemperatureSuffixPaint = createTextPaint(mTemperatureColor, tempFont);
