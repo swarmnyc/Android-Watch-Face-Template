@@ -7,13 +7,9 @@ import android.content.IntentFilter;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -26,7 +22,6 @@ import android.text.format.DateUtils;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
-import android.view.WindowInsets;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -43,240 +38,374 @@ import com.google.android.gms.wearable.Wearable;
 
 import java.util.TimeZone;
 
-public class WeatherWatchFaceService extends WeatherWatchFaceServiceBase {
-    @Override
-    public Engine onCreateEngine() {
-        return new Engine(this);
-    }
+public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
+    public class WeatherWatchFaceEngine extends CanvasWatchFaceService.Engine
+            implements
+            GoogleApiClient.ConnectionCallbacks,
+            GoogleApiClient.OnConnectionFailedListener,
+            DataApi.DataListener, NodeApi.NodeListener {
 
-    private class Engine extends WeatherWatchFaceEngine {
-        protected float mColonXOffset;
-        protected float mDateSuffixYOffset;
-        protected float mDateYOffset;
-        protected float mDebugInfoYOffset;
-        protected float mInternalDistance;
-        protected float mTemperatureSuffixYOffset;
-        protected float mTemperatureYOffset;
-        protected float mTimeXOffset;
-        protected float mTimeYOffset;
+        private String PACKAGE_NAME = WeatherWatchFaceEngine.class.getPackage().getName();
+        protected static final int MSG_UPDATE_TIME = 0;
+        protected long UPDATE_RATE_MS;
+        protected static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 6;
+        protected final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mTime.clear(intent.getStringExtra("time-zone"));
+                mTime.setToNow();
+            }
+        };
+        /**
+         * Handler to update the time periodically in interactive mode.
+         */
+        protected final Handler mUpdateTimeHandler = new Handler() {
+            @Override
+            public void handleMessage(Message message) {
+                switch (message.what) {
+                    case MSG_UPDATE_TIME:
+                        invalidate();
 
-        public Engine(WatchFaceService service) {
-            super(service);
+                        if (shouldUpdateTimerBeRunning()) {
+                            long timeMs = System.currentTimeMillis();
+                            long delayMs = UPDATE_RATE_MS - (timeMs % UPDATE_RATE_MS);
+                            mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, UPDATE_RATE_MS);
+                            requireWeatherInfo();
+                        }
+                        break;
+                }
+            }
+        };
+        protected int mTheme = 3;
+        protected int mTimeUnit = ConverterUtil.TIME_UNIT_12;
+        protected AssetManager mAsserts;
+        protected Bitmap mWeatherConditionDrawable;
+        protected GoogleApiClient mGoogleApiClient;
+        protected Paint mBackgroundPaint;
+        protected Paint mDatePaint;
+        protected Paint mDateSuffixPaint;
+        protected Paint mDebugInfoPaint;
+        protected Paint mTemperatureBorderPaint;
+        protected Paint mTemperaturePaint;
+        protected Paint mTemperatureSuffixPaint;
+        protected Paint mTimePaint;
+        protected Resources mResources;
+        protected String mWeatherCondition;
+        protected String mWeatherConditionResourceName;
+        protected Time mSunriseTime;
+        protected Time mSunsetTime;
+        protected Time mTime;
+        protected boolean isRound;
+        protected boolean mLowBitAmbient;
+        protected boolean mRegisteredService = false;
 
-            UPDATE_RATE_MS = 1000;
+        protected int mBackgroundColor;
+        protected int mBackgroundDefaultColor;
+        protected int mRequireInterval;
+        protected int mTemperature = Integer.MAX_VALUE;
+        protected int mTemperatureScale;
+        protected long mWeatherInfoReceivedTime;
+        protected long mWeatherInfoRequiredTime;
+
+        public WeatherWatchFaceEngine() {
+            mGoogleApiClient = new GoogleApiClient.Builder(WeatherWatchFaceService.this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(Wearable.API)
+                    .build();
         }
+
+        @Override
+        public void onConnected(Bundle bundle) {
+            log("Connected: " + bundle);
+            getConfig();
+
+            Wearable.NodeApi.addListener(mGoogleApiClient, this);
+            Wearable.DataApi.addListener(mGoogleApiClient, this);
+            requireWeatherInfo();
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+            log("ConnectionSuspended: " + i);
+        }
+
+        @Override
+        public void onDataChanged(DataEventBuffer dataEvents) {
+            for (int i = 0; i < dataEvents.getCount(); i++) {
+                DataEvent event = dataEvents.get(i);
+                DataMap dataMap = DataMap.fromByteArray(event.getDataItem().getData());
+                log("onDataChanged: " + dataMap);
+
+                fetchConfig(dataMap);
+            }
+        }
+
+        @Override
+        public void onPeerConnected(Node node) {
+            log("PeerConnected: " + node);
+            requireWeatherInfo();
+        }
+
+        @Override
+        public void onPeerDisconnected(Node node) {
+            log("PeerDisconnected: " + node);
+        }
+
+        @Override
+        public void onConnectionFailed(ConnectionResult connectionResult) {
+            log("ConnectionFailed: " + connectionResult);
+
+        }
+
 
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
-            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.weather_bg_color);
-            mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(mBackgroundDefaultColor);
+            setWatchFaceStyle(new WatchFaceStyle.Builder(WeatherWatchFaceService.this)
+                    .setCardPeekMode(WatchFaceStyle.PEEK_MODE_SHORT)
+                    .setAmbientPeekMode(WatchFaceStyle.AMBIENT_PEEK_MODE_HIDDEN)
+                    .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
+                    .setShowSystemUiTime(false)
+                    .build());
 
-            mTemperatureBorderPaint = new Paint();
-            mTemperatureBorderPaint.setStyle(Paint.Style.STROKE);
-            mTemperatureBorderPaint.setColor(mResources.getColor(R.color.weather_temperature_border_color));
-            mTemperatureBorderPaint.setStrokeWidth(3f);
-            mTemperatureBorderPaint.setAntiAlias(true);
+            mResources = WeatherWatchFaceService.this.getResources();
+            mAsserts = WeatherWatchFaceService.this.getAssets();
 
-            Typeface timeFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_time_font));
-            Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_date_font));
-            Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_temperature_font));
+            mDebugInfoPaint = new Paint();
+            mDebugInfoPaint.setColor(Color.parseColor("White"));
+            mDebugInfoPaint.setTextSize(20);
+            mDebugInfoPaint.setAntiAlias(true);
 
-            mTimePaint = createTextPaint(mResources.getColor(R.color.weather_time_color), timeFont);
-            mDatePaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
-            mDateSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
-            mTemperaturePaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
-            mTemperatureSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
+            mTime = new Time();
+            mSunriseTime = new Time();
+            mSunsetTime = new Time();
+
+            mRequireInterval = mResources.getInteger(R.integer.WeatherDefaultRequireInterval);
+
+            mGoogleApiClient.connect();
         }
 
         @Override
-        public void onApplyWindowInsets(WindowInsets insets) {
-            super.onApplyWindowInsets(insets);
-
-            // Load resources that have alternate values for round watches.
-            isRound = insets.isRound();
-
-            mInternalDistance = mResources.getDimension(isRound ?
-                    R.dimen.weather_internal_distance_round : R.dimen.weather_internal_distance);
-
-            mTimeXOffset = mResources.getInteger(isRound ?
-                    R.integer.weather_time_xoffset_round : R.integer.weather_time_xoffset);
-
-            mTimeYOffset = mResources.getInteger(isRound ?
-                    R.integer.weather_time_yoffset_round : R.integer.weather_time_yoffset);
-
-            float timeTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_time_size_round : R.dimen.weather_time_size);
-
-            float dateTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_date_size_round : R.dimen.weather_date_size);
-
-            float dateSuffixTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_date_suffix_size_round : R.dimen.weather_date_suffix_size);
-
-            float tempTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_temperature_size_round : R.dimen.weather_temperature_size);
-
-            float tempSuffixTextSize = mResources.getDimension(isRound ?
-                    R.dimen.weather_temperature_suffix_size_round : R.dimen.weather_temperature_suffix_size);
-
-            mTimePaint.setTextSize(timeTextSize);
-            mDatePaint.setTextSize(dateTextSize);
-            mDateSuffixPaint.setTextSize(dateSuffixTextSize);
-            mTemperaturePaint.setTextSize(tempTextSize);
-            mTemperatureSuffixPaint.setTextSize(tempSuffixTextSize);
-
-            mTimeYOffset += (mTimePaint.descent() + mTimePaint.ascent()) / 2;
-            mColonXOffset = mTimePaint.measureText(Consts.COLON_STRING) / 2;
-            mDateYOffset = (mDatePaint.descent() + mDatePaint.ascent()) / 2;
-            mDateSuffixYOffset = (mDateSuffixPaint.descent() + mDateSuffixPaint.ascent()) / 2;
-            mTemperatureYOffset = (mTemperaturePaint.descent() + mTemperaturePaint.ascent()) / 2;
-            mTemperatureSuffixYOffset = (mTemperatureSuffixPaint.descent() + mTemperatureSuffixPaint.ascent()) / 2;
-            mDebugInfoYOffset = 5 + mDebugInfoPaint.getTextSize() + (mDebugInfoPaint.descent() + mDebugInfoPaint.ascent()) / 2;
+        public void onDestroy() {
+            log("Destroy");
+            mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            super.onDestroy();
         }
 
         @Override
-        public void onDraw(Canvas canvas, Rect bounds) {
-            //log("Draw");
-            mTime.setToNow();
+        public void onInterruptionFilterChanged(int interruptionFilter) {
+            super.onInterruptionFilterChanged(interruptionFilter);
 
-            boolean hasPeekCard = getPeekCardPosition().top != 0;
-            int width = bounds.width();
-            int height = bounds.height();
-            float radius = width / 2;
-            float yOffset;
-            if (hasPeekCard) {
-                yOffset = height * 0.05f;
+            log("onInterruptionFilterChanged: " + interruptionFilter);
+        }
+
+        @Override
+        public void onPropertiesChanged(Bundle properties) {
+            super.onPropertiesChanged(properties);
+            mLowBitAmbient = properties.getBoolean(WatchFaceService.PROPERTY_LOW_BIT_AMBIENT, false);
+
+            log("onPropertiesChanged: LowBitAmbient=" + mLowBitAmbient);
+        }
+
+        @Override
+        public void onTimeTick() {
+            super.onTimeTick();
+            log("TimeTick");
+            invalidate();
+            requireWeatherInfo();
+        }
+
+        @Override
+        public void onVisibilityChanged(boolean visible) {
+            super.onVisibilityChanged(visible);
+            log("onVisibilityChanged: " + visible);
+
+            if (visible) {
+                mGoogleApiClient.connect();
+                registerTimeZoneService();
+
+                // Update time zone in case it changed while we weren't visible.
+                mTime.clear(TimeZone.getDefault().getID());
+                mTime.setToNow();
             } else {
-                yOffset = 0;
-            }
-
-            canvas.drawRect(0, 0, width, height, mBackgroundPaint);
-
-            // Time
-            String hourString = String.format("%02d", ConverterUtil.convertHour(mTime.hour, mTimeUnit));
-            String minString = String.format("%02d", mTime.minute);
-
-            //For Test
-//            hourString = "11";
-//            minString = "34";
-//            mTemperature = 50;
-//            mWeatherCondition = "clear";
-//            mWeatherInfoReceivedTime = System.currentTimeMillis();
-//            mSunriseTime.set(mWeatherInfoReceivedTime-10000);
-//            mSunsetTime.set(mWeatherInfoReceivedTime+10000);
-
-            float hourWidth = mTimePaint.measureText(hourString);
-
-            float x = radius - hourWidth - mColonXOffset + mTimeXOffset;
-            float y = radius - mTimeYOffset - yOffset;
-            float suffixY;
-
-            canvas.drawText(hourString, x, y, mTimePaint);
-
-            x = radius - mColonXOffset + mTimeXOffset;
-            canvas.drawText(Consts.COLON_STRING, x, y, mTimePaint);
-
-            x = radius + mColonXOffset + mTimeXOffset;
-            canvas.drawText(minString, x, y, mTimePaint);
-
-            suffixY = y + mDateSuffixPaint.getTextSize() +
-                    mInternalDistance +
-                    mDateSuffixYOffset;
-
-            y += mDatePaint.getTextSize() + mInternalDistance + mDateYOffset;
-
-            //Date
-            String monthString = ConverterUtil.convertToMonth(mTime.month);
-            String dayString = String.valueOf(mTime.monthDay);
-            String daySuffixString = ConverterUtil.getDaySuffix(mTime.monthDay);
-
-            float monthWidth = mDatePaint.measureText(monthString);
-            float dayWidth = mDatePaint.measureText(dayString);
-            float dateWidth = monthWidth + dayWidth +
-                    mDateSuffixPaint.measureText(daySuffixString);
-
-            x = radius - dateWidth / 2;
-            canvas.drawText(monthString, x, y, mDatePaint);
-            x += monthWidth;
-            canvas.drawText(dayString, x, y, mDatePaint);
-            x += dayWidth;
-            canvas.drawText(daySuffixString, x, suffixY, mDateSuffixPaint);
-
-            //WeatherInfo
-            long timeSpan = System.currentTimeMillis() - mWeatherInfoReceivedTime;
-            if (timeSpan <= WEATHER_INFO_TIME_OUT) {
-                // photo
-                if (!TextUtils.isEmpty(mWeatherCondition)) {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.append("weather_");
-                    stringBuilder.append(mWeatherCondition);
-
-                    if ((mWeatherCondition.equals("cloudy") || mWeatherCondition.equals("clear")) && (Time.compare(mTime, mSunriseTime) < 0 || Time.compare(mTime, mSunsetTime) > 0)) {
-                        //cloudy and clear have night picture
-                        stringBuilder.append("night");
-                    }
-                    if (this.isInAmbientMode()) {
-                        stringBuilder.append("_gray");
-                    }
-
-                    String name = stringBuilder.toString();
-                    if (!name.equals(mWeatherConditionResourceName)) {
-                        log("CreateScaledBitmap: " + name);
-                        mWeatherConditionResourceName = name;
-                        int id = mResources.getIdentifier(name, "drawable", this.getClass().getPackage().getName());
-
-                        Drawable b = mResources.getDrawable(id);
-                        mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();
-                        float sizeScale = (width * 0.5f) / mWeatherConditionDrawable.getWidth();
-                        mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int) (mWeatherConditionDrawable.getWidth() * sizeScale), (int) (mWeatherConditionDrawable.getHeight() * sizeScale), true);
-                    }
-
-                    canvas.drawBitmap(mWeatherConditionDrawable, radius - mWeatherConditionDrawable.getWidth() / 2, 0 - yOffset, null);
+                if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+                    Wearable.DataApi.removeListener(mGoogleApiClient, this);
+                    Wearable.NodeApi.removeListener(mGoogleApiClient, this);
+                    mGoogleApiClient.disconnect();
                 }
 
-                //temperature
-                if (mTemperature != Integer.MAX_VALUE && !(isRound && hasPeekCard)) {
-                    String temperatureString = String.valueOf(mTemperature);
-                    String temperatureScaleString = mTemperatureScale == ConverterUtil.FAHRENHEIT ? ConverterUtil.FAHRENHEIT_STRING : ConverterUtil.CELSIUS_STRING;
-                    float temperatureWidth = mTemperaturePaint.measureText(temperatureString);
-                    float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(temperatureScaleString)) / 2;
-                    float borderPadding = temperatureRadius * 0.5f;
-                    x = radius;
-                    if (hasPeekCard) {
-                        y = getPeekCardPosition().top - temperatureRadius - borderPadding - mTemperatureBorderPaint.getStrokeWidth() * 2;
-                    } else {
-                        y = bounds.height() * 0.80f;
-                    }
-
-                    suffixY = y - mTemperatureSuffixYOffset;
-                    canvas.drawCircle(radius, y + borderPadding / 2, temperatureRadius + borderPadding, mTemperatureBorderPaint);
-
-                    x -= temperatureRadius;
-                    y -= mTemperatureYOffset;
-                    canvas.drawText(temperatureString, x, y, mTemperaturePaint);
-                    x += temperatureWidth;
-                    canvas.drawText(temperatureScaleString, x, suffixY, mTemperatureSuffixPaint);
-                }
+                unregisterTimeZoneService();
             }
 
+            // Whether the timer should be running depends on whether we're visible (as well as
+            // whether we're in ambient mode), so we may need to start or stop the timer.
+            updateTimer();
+        }
 
-            if (BuildConfig.DEBUG) {
-                String timeString;
-                if (mWeatherInfoReceivedTime == 0) {
-                    timeString = "No data received";
-                } else if (timeSpan > DateUtils.HOUR_IN_MILLIS) {
-                    timeString = "Get: " + String.valueOf(timeSpan / DateUtils.HOUR_IN_MILLIS) + " hours ago";
-                } else if (timeSpan > DateUtils.MINUTE_IN_MILLIS) {
-                    timeString = "Get: " + String.valueOf(timeSpan / DateUtils.MINUTE_IN_MILLIS) + " mins ago";
+        protected Paint createTextPaint(int color, Typeface typeface) {
+            Paint paint = new Paint();
+            paint.setColor(color);
+            if (typeface != null)
+                paint.setTypeface(typeface);
+            paint.setAntiAlias(true);
+            return paint;
+        }
+
+        protected boolean shouldUpdateTimerBeRunning() {
+            return isVisible() && !isInAmbientMode();
+        }
+
+        protected void fetchConfig(DataMap config) {
+            if (config.containsKey(Consts.KEY_WEATHER_UPDATE_TIME)) {
+                mWeatherInfoReceivedTime = config.getLong(Consts.KEY_WEATHER_UPDATE_TIME);
+            }
+
+            if (config.containsKey(Consts.KEY_WEATHER_CONDITION)) {
+                String cond = config.getString(Consts.KEY_WEATHER_CONDITION);
+                if (TextUtils.isEmpty(cond)) {
+                    mWeatherCondition = null;
                 } else {
-                    timeString = "Get: " + String.valueOf(timeSpan / DateUtils.SECOND_IN_MILLIS) + " secs ago";
+                    mWeatherCondition = cond;
+                }
+            }
+
+            if (config.containsKey(Consts.KEY_WEATHER_TEMPERATURE)) {
+                mTemperature = config.getInt(Consts.KEY_WEATHER_TEMPERATURE);
+                if (mTemperatureScale != ConverterUtil.FAHRENHEIT) {
+                    mTemperature = ConverterUtil.convertFahrenheitToCelsius(mTemperature);
+                }
+            }
+
+            if (config.containsKey(Consts.KEY_WEATHER_SUNRISE)) {
+                mSunriseTime.set(config.getLong(Consts.KEY_WEATHER_SUNRISE) * 1000);
+                log("SunriseTime: " + mSunriseTime);
+            }
+
+            if (config.containsKey(Consts.KEY_WEATHER_SUNSET)) {
+                mSunsetTime.set(config.getLong(Consts.KEY_WEATHER_SUNSET) * 1000);
+                log("SunsetTime: " + mSunsetTime);
+            }
+
+            if (config.containsKey(Consts.KEY_CONFIG_TEMPERATURE_SCALE)) {
+                int scale = config.getInt(Consts.KEY_CONFIG_TEMPERATURE_SCALE);
+
+                if (scale != mTemperatureScale) {
+                    if (scale == ConverterUtil.FAHRENHEIT) {
+                        mTemperature = ConverterUtil.convertCelsiusToFahrenheit(mTemperature);
+                    } else {
+                        mTemperature = ConverterUtil.convertFahrenheitToCelsius(mTemperature);
+                    }
                 }
 
-                canvas.drawText(timeString, width - mDebugInfoPaint.measureText(timeString), mDebugInfoYOffset, mDebugInfoPaint);
+                mTemperatureScale = scale;
+            }
+
+            if (config.containsKey(Consts.KEY_CONFIG_THEME)) {
+                mTheme = config.getInt(Consts.KEY_CONFIG_THEME);
+
+                mBackgroundColor = mResources.getColor(mResources.getIdentifier("weather_theme_" + mTheme + "_bg", "color", PACKAGE_NAME));
+                if (!isInAmbientMode()) {
+                    mBackgroundPaint.setColor(mBackgroundColor);
+                }
+            }
+
+            if (config.containsKey(Consts.KEY_CONFIG_TIME_UNIT)) {
+                mTimeUnit = config.getInt(Consts.KEY_CONFIG_TIME_UNIT);
+            }
+
+            if (config.containsKey(Consts.KEY_CONFIG_REQUIRE_INTERVAL)) {
+                mRequireInterval = config.getInt(Consts.KEY_CONFIG_REQUIRE_INTERVAL);
+            }
+
+            invalidate();
+        }
+
+        protected void getConfig() {
+            log("Start getting Config");
+            Wearable.NodeApi.getLocalNode(mGoogleApiClient).setResultCallback(new ResultCallback<NodeApi.GetLocalNodeResult>() {
+                @Override
+                public void onResult(NodeApi.GetLocalNodeResult getLocalNodeResult) {
+                    Uri uri = new Uri.Builder()
+                            .scheme("wear")
+                            .path(Consts.PATH_CONFIG)
+                            .authority(getLocalNodeResult.getNode().getId())
+                            .build();
+
+                    Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
+                            .setResultCallback(
+                                    new ResultCallback<DataApi.DataItemResult>() {
+                                        @Override
+                                        public void onResult(DataApi.DataItemResult dataItemResult) {
+                                            log("Finish Config: " + dataItemResult.getStatus());
+                                            if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
+                                                fetchConfig(DataMapItem.fromDataItem(dataItemResult.getDataItem()).getDataMap());
+                                            }
+                                        }
+                                    }
+                            );
+                }
+            });
+        }
+
+        protected void log(String message) {
+            Log.d(WeatherWatchFaceService.this.getClass().getSimpleName(), message);
+        }
+
+        protected void registerTimeZoneService() {
+            //TimeZone and TemperatureSensor
+            if (mRegisteredService) {
+                return;
+            }
+
+            mRegisteredService = true;
+
+            // TimeZone
+            IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
+            WeatherWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
+        }
+
+        protected void requireWeatherInfo() {
+            if (!mGoogleApiClient.isConnected())
+                return;
+
+            long timeMs = System.currentTimeMillis();
+
+            // The weather info is still up to date.
+            if ((timeMs - mWeatherInfoReceivedTime) <= mRequireInterval)
+                return;
+
+            // Try once in a min.
+            if ((timeMs - mWeatherInfoRequiredTime) <= DateUtils.MINUTE_IN_MILLIS)
+                return;
+
+            mWeatherInfoRequiredTime = timeMs;
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, "", Consts.PATH_WEATHER_REQUIRE, null)
+                    .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                            log("SendRequireMessage:" + sendMessageResult.getStatus());
+                        }
+                    });
+        }
+
+        protected void unregisterTimeZoneService() {
+            if (!mRegisteredService) {
+                return;
+            }
+            mRegisteredService = false;
+
+            //TimeZone
+            WeatherWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
+        }
+
+        protected void updateTimer() {
+            mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            if (shouldUpdateTimerBeRunning()) {
+                mUpdateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME);
             }
         }
     }
 }
+

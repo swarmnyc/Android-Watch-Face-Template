@@ -15,7 +15,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".WeatherWatchFaceService"
+            android:name=".RunnerWeatherWatchFaceService"
             android:label="@string/name_WeatherWatchFace"
             android:allowEmbedded="true"
             android:taskAffinity=""
@@ -38,7 +38,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".ModernWeatherWatchFaceService"
+            android:name=".SlimWeatherWatchFaceService"
             android:label="@string/name_ModernWatchFace"
             android:allowEmbedded="true"
             android:taskAffinity=""
