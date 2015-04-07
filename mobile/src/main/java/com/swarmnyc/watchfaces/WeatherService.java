@@ -49,30 +49,10 @@ public class WeatherService extends WearableListenerService {
                     .build();
 
             mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
-                @Override
-                public void onLocationChanged(Location location) {
-                    Log.d(TAG, "onLocationChanged: " + location);
-                    mLocation = location;
-                    new Task().execute();
-                    mLocationManager.removeUpdates(this);
-                }
+            mLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 
-                @Override
-                public void onStatusChanged(String provider, int status, Bundle extras) {
-
-                }
-
-                @Override
-                public void onProviderEnabled(String provider) {
-
-                }
-
-                @Override
-                public void onProviderDisabled(String provider) {
-
-                }
-            });
+            Task task = new Task();
+            task.execute();
         }
     }
 
