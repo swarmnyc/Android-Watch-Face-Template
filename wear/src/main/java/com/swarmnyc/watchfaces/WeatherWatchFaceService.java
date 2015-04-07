@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.wearable.watchface.CanvasWatchFaceService;
+import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
@@ -42,182 +43,40 @@ import com.google.android.gms.wearable.Wearable;
 
 import java.util.TimeZone;
 
-public class WeatherWatchFaceService extends CanvasWatchFaceService {
-// ------------------------------ FIELDS ------------------------------
-
-    private static final String TAG = "WeatherWatchFaceService";
-    private static String PACKAGE_NAME = WeatherWatchFaceService.class.getPackage().getName();
-
-// -------------------------- OTHER METHODS --------------------------
-
+public class WeatherWatchFaceService extends WeatherWatchFaceServiceBase {
     @Override
     public Engine onCreateEngine() {
-        return new Engine();
+        return new Engine(this);
     }
 
-// -------------------------- INNER CLASSES --------------------------
-
-    private class Engine extends CanvasWatchFaceService.Engine
-            implements GoogleApiClient.ConnectionCallbacks,
-            GoogleApiClient.OnConnectionFailedListener,
-            DataApi.DataListener,
-            NodeApi.NodeListener {
-// ------------------------------ FIELDS ------------------------------
-
-        private static final int MSG_UPDATE_TIME = 0;
-        private static final long UPDATE_RATE_MS = 1000;
-        private static final long WEATHER_INFO_TIME_OUT = DateUtils.HOUR_IN_MILLIS * 6;
-
-        private int mTheme = 3;
-        private int mTimeUnit = ConverterUtil.TIME_UNIT_12;
-
-        private AssetManager mAsserts;
-        private Bitmap mWeatherConditionDrawable;
-        private final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mTime.clear(intent.getStringExtra("time-zone"));
-                mTime.setToNow();
-            }
-        };
-
-        private GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(WeatherWatchFaceService.this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(Wearable.API)
-                .build();
-
-        /**
-         * Handler to update the time periodically in interactive mode.
-         */
-        private final Handler mUpdateTimeHandler = new Handler() {
-            @Override
-            public void handleMessage(Message message) {
-                switch (message.what) {
-                    case MSG_UPDATE_TIME:
-                        invalidate();
-
-                        if (shouldUpdateTimerBeRunning()) {
-                            mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, UPDATE_RATE_MS);
-                            requireWeatherInfo();
-                        }
-                        break;
-                }
-            }
-        };
-
-        private Paint mBackgroundPaint;
-        private Paint mDatePaint;
-        private Paint mDateSuffixPaint;
-        private Paint mDebugInfoPaint;
-        private Paint mTemperatureBorderPaint;
-        private Paint mTemperaturePaint;
-        private Paint mTemperatureSuffixPaint;
-        private Paint mTimePaint;
-        private Resources mResources;
-        private String mWeatherCondition;
-        private String mWeatherConditionResourceName;
-        private Time mSunriseTime;
-        private Time mSunsetTime;
-        private Time mTime;
-        private boolean isRound;
-        private boolean mLowBitAmbient;
-        private boolean mRegisteredService = false;
-        private float mColonXOffset;
-        private float mDateSuffixYOffset;
-        private float mDateYOffset;
-        private float mDebugInfoYOffset;
-        private float mInternalDistance;
-        private float mTemperatureSuffixYOffset;
-        private float mTemperatureYOffset;
-        private float mTimeXOffset;
-        private float mTimeYOffset;
-        private int mBackgroundColor;
-        private int mBackgroundDefaultColor;
-        private int mRequireInterval;
-        private int mTemperature = Integer.MAX_VALUE;
-        private int mTemperatureScale;
-        private long mWeatherInfoReceivedTime;
-        private long mWeatherInfoRequiredTime;
-
-// ------------------------ INTERFACE METHODS ------------------------
-
-
-// --------------------- Interface ConnectionCallbacks ---------------------
-
-        @Override
-        public void onConnected(Bundle bundle) {
-            log("Connected: " + bundle);
-            getConfig();
-
-            Wearable.NodeApi.addListener(mGoogleApiClient, this);
-            Wearable.DataApi.addListener(mGoogleApiClient, this);
-            requireWeatherInfo();
+    private class Engine extends WeatherWatchFaceEngine {
+        public Engine(WatchFaceService service) {
+            super(service);
         }
 
         @Override
-        public void onConnectionSuspended(int i) {
-            log("ConnectionSuspended: " + i);
-        }
+        public void onCreate(SurfaceHolder holder) {
+            super.onCreate(holder);
 
-        @Override
-        public void onDataChanged(DataEventBuffer dataEvents) {
-            for (int i = 0; i < dataEvents.getCount(); i++) {
-                DataEvent event = dataEvents.get(i);
-                DataMap dataMap = DataMap.fromByteArray(event.getDataItem().getData());
-                log("onDataChanged: " + dataMap);
+            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.weather_bg_color);
+            mBackgroundPaint = new Paint();
+            mBackgroundPaint.setColor(mBackgroundDefaultColor);
 
-                fetchConfig(dataMap);
-            }
-        }
+            mTemperatureBorderPaint = new Paint();
+            mTemperatureBorderPaint.setStyle(Paint.Style.STROKE);
+            mTemperatureBorderPaint.setColor(mResources.getColor(R.color.weather_temperature_border_color));
+            mTemperatureBorderPaint.setStrokeWidth(3f);
+            mTemperatureBorderPaint.setAntiAlias(true);
 
-// --------------------- Interface NodeListener ---------------------
+            Typeface timeFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_time_font));
+            Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_date_font));
+            Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_temperature_font));
 
-        @Override
-        public void onPeerConnected(Node node) {
-            log("PeerConnected: " + node);
-            requireWeatherInfo();
-        }
-
-        @Override
-        public void onPeerDisconnected(Node node) {
-            log("PeerDisconnected: " + node);
-        }
-
-// --------------------- Interface OnConnectionFailedListener ---------------------
-
-        @Override
-        public void onConnectionFailed(ConnectionResult connectionResult) {
-            log("ConnectionFailed: " + connectionResult);
-
-        }
-
-// -------------------------- OTHER METHODS --------------------------
-
-        @Override
-        public void onAmbientModeChanged(boolean inAmbientMode) {
-            super.onAmbientModeChanged(inAmbientMode);
-            log("onAmbientModeChanged: " + inAmbientMode);
-
-            if (mLowBitAmbient) {
-                boolean antiAlias = !inAmbientMode;
-                mTimePaint.setAntiAlias(antiAlias);
-                mDatePaint.setAntiAlias(antiAlias);
-                mTemperaturePaint.setAntiAlias(antiAlias);
-            }
-
-            if (inAmbientMode) {
-                mBackgroundPaint.setColor(mBackgroundDefaultColor);
-            } else {
-                mBackgroundPaint.setColor(mBackgroundColor);
-            }
-
-
-            invalidate();
-
-            // Whether the timer should be running depends on whether we're in ambient mode (as well
-            // as whether we're visible), so we may need to start or stop the timer.
-            updateTimer();
+            mTimePaint = createTextPaint(mResources.getColor(R.color.weather_time_color), timeFont);
+            mDatePaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
+            mDateSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
+            mTemperaturePaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
+            mTemperatureSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
         }
 
         @Override
@@ -264,61 +123,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mTemperatureYOffset = (mTemperaturePaint.descent() + mTemperaturePaint.ascent()) / 2;
             mTemperatureSuffixYOffset = (mTemperatureSuffixPaint.descent() + mTemperatureSuffixPaint.ascent()) / 2;
             mDebugInfoYOffset = 5 + mDebugInfoPaint.getTextSize() + (mDebugInfoPaint.descent() + mDebugInfoPaint.ascent()) / 2;
-        }
-
-        @Override
-        public void onCreate(SurfaceHolder holder) {
-            super.onCreate(holder);
-
-            setWatchFaceStyle(new WatchFaceStyle.Builder(WeatherWatchFaceService.this)
-                    .setCardPeekMode(WatchFaceStyle.PEEK_MODE_SHORT)
-                    .setAmbientPeekMode(WatchFaceStyle.AMBIENT_PEEK_MODE_HIDDEN)
-                    .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
-                    .setShowSystemUiTime(false)
-                    .build());
-
-            mResources = WeatherWatchFaceService.this.getResources();
-            mAsserts = WeatherWatchFaceService.this.getAssets();
-
-            mBackgroundColor = mBackgroundDefaultColor = mResources.getColor(R.color.weather_bg_color);
-            mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(mBackgroundDefaultColor);
-
-            mTemperatureBorderPaint = new Paint();
-            mTemperatureBorderPaint.setStyle(Paint.Style.STROKE);
-            mTemperatureBorderPaint.setColor(mResources.getColor(R.color.weather_temperature_border_color));
-            mTemperatureBorderPaint.setStrokeWidth(3f);
-            mTemperatureBorderPaint.setAntiAlias(true);
-
-            Typeface timeFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_time_font));
-            Typeface dateFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_date_font));
-            Typeface tempFont = Typeface.createFromAsset(mAsserts, mResources.getString(R.string.weather_temperature_font));
-
-            mTimePaint = createTextPaint(mResources.getColor(R.color.weather_time_color), timeFont);
-            mDatePaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
-            mDateSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_date_color), dateFont);
-            mTemperaturePaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
-            mTemperatureSuffixPaint = createTextPaint(mResources.getColor(R.color.weather_temperature_color), tempFont);
-
-            mDebugInfoPaint = new Paint();
-            mDebugInfoPaint.setColor(Color.parseColor("White"));
-            mDebugInfoPaint.setTextSize(20);
-            mDebugInfoPaint.setAntiAlias(true);
-
-            mTime = new Time();
-            mSunriseTime = new Time();
-            mSunsetTime = new Time();
-
-            mRequireInterval = mResources.getInteger(R.integer.WeatherDefaultRequireInterval);
-
-            mGoogleApiClient.connect();
-        }
-
-        @Override
-        public void onDestroy() {
-            log("Destroy");
-            mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
-            super.onDestroy();
         }
 
         @Override
@@ -410,7 +214,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     if (!name.equals(mWeatherConditionResourceName)) {
                         log("CreateScaledBitmap: " + name);
                         mWeatherConditionResourceName = name;
-                        int id = mResources.getIdentifier(name, "drawable", PACKAGE_NAME);
+                        int id = mResources.getIdentifier(name, "drawable", this.getClass().getPackage().getName());
 
                         Drawable b = mResources.getDrawable(id);
                         mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();
@@ -460,219 +264,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
 
                 canvas.drawText(timeString, width - mDebugInfoPaint.measureText(timeString), mDebugInfoYOffset, mDebugInfoPaint);
-            }
-        }
-
-        @Override
-        public void onInterruptionFilterChanged(int interruptionFilter) {
-            super.onInterruptionFilterChanged(interruptionFilter);
-
-            log("onInterruptionFilterChanged: " + interruptionFilter);
-        }
-
-        @Override
-        public void onPropertiesChanged(Bundle properties) {
-            super.onPropertiesChanged(properties);
-            mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
-
-            log("onPropertiesChanged: LowBitAmbient=" + mLowBitAmbient);
-        }
-
-        @Override
-        public void onTimeTick() {
-            super.onTimeTick();
-            log("TimeTick");
-            invalidate();
-            requireWeatherInfo();
-        }
-
-        @Override
-        public void onVisibilityChanged(boolean visible) {
-            super.onVisibilityChanged(visible);
-            log("onVisibilityChanged: " + visible);
-
-            if (visible) {
-                mGoogleApiClient.connect();
-                registerTimeZoneService();
-
-                // Update time zone in case it changed while we weren't visible.
-                mTime.clear(TimeZone.getDefault().getID());
-                mTime.setToNow();
-            } else {
-                if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
-                    Wearable.DataApi.removeListener(mGoogleApiClient, this);
-                    Wearable.NodeApi.removeListener(mGoogleApiClient, this);
-                    mGoogleApiClient.disconnect();
-                }
-
-                unregisterTimeZoneService();
-            }
-
-            // Whether the timer should be running depends on whether we're visible (as well as
-            // whether we're in ambient mode), so we may need to start or stop the timer.
-            updateTimer();
-        }
-
-        private Paint createTextPaint(int color, Typeface typeface) {
-            Paint paint = new Paint();
-            paint.setColor(color);
-            if (typeface != null)
-                paint.setTypeface(typeface);
-            paint.setAntiAlias(true);
-            return paint;
-        }
-
-        private boolean shouldUpdateTimerBeRunning() {
-            return isVisible() && !isInAmbientMode();
-        }
-
-        private void fetchConfig(DataMap config) {
-            if (config.containsKey(Consts.KEY_WEATHER_UPDATE_TIME)) {
-                mWeatherInfoReceivedTime = config.getLong(Consts.KEY_WEATHER_UPDATE_TIME);
-            }
-
-            if (config.containsKey(Consts.KEY_WEATHER_CONDITION)) {
-                String cond = config.getString(Consts.KEY_WEATHER_CONDITION);
-                if (TextUtils.isEmpty(cond)) {
-                    mWeatherCondition = null;
-                } else {
-                    mWeatherCondition = cond;
-                }
-            }
-
-            if (config.containsKey(Consts.KEY_WEATHER_TEMPERATURE)) {
-                mTemperature = config.getInt(Consts.KEY_WEATHER_TEMPERATURE);
-                if (mTemperatureScale != ConverterUtil.FAHRENHEIT) {
-                    mTemperature = ConverterUtil.convertFahrenheitToCelsius(mTemperature);
-                }
-            }
-
-            if (config.containsKey(Consts.KEY_WEATHER_SUNRISE)) {
-                mSunriseTime.set(config.getLong(Consts.KEY_WEATHER_SUNRISE) * 1000);
-                log("SunriseTime: " + mSunriseTime);
-            }
-
-            if (config.containsKey(Consts.KEY_WEATHER_SUNSET)) {
-                mSunsetTime.set(config.getLong(Consts.KEY_WEATHER_SUNSET) * 1000);
-                log("SunsetTime: " + mSunsetTime);
-            }
-
-            if (config.containsKey(Consts.KEY_CONFIG_TEMPERATURE_SCALE)) {
-                int scale = config.getInt(Consts.KEY_CONFIG_TEMPERATURE_SCALE);
-
-                if (scale != mTemperatureScale) {
-                    if (scale == ConverterUtil.FAHRENHEIT) {
-                        mTemperature = ConverterUtil.convertCelsiusToFahrenheit(mTemperature);
-                    } else {
-                        mTemperature = ConverterUtil.convertFahrenheitToCelsius(mTemperature);
-                    }
-                }
-
-                mTemperatureScale = scale;
-            }
-
-            if (config.containsKey(Consts.KEY_CONFIG_THEME)) {
-                mTheme = config.getInt(Consts.KEY_CONFIG_THEME);
-
-                mBackgroundColor = mResources.getColor(mResources.getIdentifier("weather_theme_" + mTheme + "_bg", "color", PACKAGE_NAME));
-                if (!isInAmbientMode()) {
-                    mBackgroundPaint.setColor(mBackgroundColor);
-                }
-            }
-
-            if (config.containsKey(Consts.KEY_CONFIG_TIME_UNIT)) {
-                mTimeUnit = config.getInt(Consts.KEY_CONFIG_TIME_UNIT);
-            }
-
-            if (config.containsKey(Consts.KEY_CONFIG_REQUIRE_INTERVAL)) {
-                mRequireInterval = config.getInt(Consts.KEY_CONFIG_REQUIRE_INTERVAL);
-            }
-
-            invalidate();
-        }
-
-        private void getConfig() {
-            log("Start getting Config");
-            Wearable.NodeApi.getLocalNode(mGoogleApiClient).setResultCallback(new ResultCallback<NodeApi.GetLocalNodeResult>() {
-                @Override
-                public void onResult(NodeApi.GetLocalNodeResult getLocalNodeResult) {
-                    Uri uri = new Uri.Builder()
-                            .scheme("wear")
-                            .path(Consts.PATH_CONFIG)
-                            .authority(getLocalNodeResult.getNode().getId())
-                            .build();
-
-                    Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
-                            .setResultCallback(
-                                    new ResultCallback<DataApi.DataItemResult>() {
-                                        @Override
-                                        public void onResult(DataApi.DataItemResult dataItemResult) {
-                                            log("Finish Config: " + dataItemResult.getStatus());
-                                            if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
-                                                fetchConfig(DataMapItem.fromDataItem(dataItemResult.getDataItem()).getDataMap());
-                                            }
-                                        }
-                                    }
-                            );
-                }
-            });
-        }
-
-        private void log(String message) {
-            Log.d(TAG, message);
-        }
-
-        private void registerTimeZoneService() {
-            //TimeZone and TemperatureSensor
-            if (mRegisteredService) {
-                return;
-            }
-
-            mRegisteredService = true;
-
-            // TimeZone
-            IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
-            WeatherWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
-        }
-
-        private void requireWeatherInfo() {
-            if (!mGoogleApiClient.isConnected())
-                return;
-
-            long timeMs = System.currentTimeMillis();
-
-            // The weather info is still up to date.
-            if ((timeMs - mWeatherInfoReceivedTime) <= mRequireInterval)
-                return;
-
-            // Try once in a min.
-            if ((timeMs - mWeatherInfoRequiredTime) <= DateUtils.MINUTE_IN_MILLIS)
-                return;
-
-            mWeatherInfoRequiredTime = timeMs;
-            Wearable.MessageApi.sendMessage(mGoogleApiClient, "", Consts.PATH_WEATHER_REQUIRE, null)
-                    .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                        @Override
-                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                            log("SendRequireMessage:" + sendMessageResult.getStatus());
-                        }
-                    });
-        }
-
-        private void unregisterTimeZoneService() {
-            if (!mRegisteredService) {
-                return;
-            }
-            mRegisteredService = false;
-
-            //TimeZone
-            WeatherWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
-        }
-
-        private void updateTimer() {
-            mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
-            if (shouldUpdateTimerBeRunning()) {
-                mUpdateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME);
             }
         }
     }
