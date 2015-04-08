@@ -6,6 +6,9 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
+    android:id="@+id/container"
+    android:visibility="invisible"
+    tools:visibility="visible"
     tools:context="com.swarmnyc.watchfaces.WeatherWatchFaceConfigActivity">
 
     <LinearLayout
@@ -21,7 +24,7 @@
             android:id="@+id/preview_image"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:src="@drawable/weather_preview_3"
+            tools:src="@drawable/runner_preview"
             android:layout_gravity="center_horizontal"
             android:layout_margin="@dimen/main_margin"
             android:contentDescription="@string/preview_image" />
@@ -32,33 +35,14 @@
             style="@style/TitleLabel"
             android:text="@string/color" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/colorbutton_container"
+        <TableLayout
+            android:id="@+id/theme_button_container"
             android:layout_marginTop="@dimen/main_margin"
-            android:layout_marginBottom="@dimen/main_margin">
+            android:layout_marginBottom="@dimen/main_margin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-            <Button
-                android:id="@+id/colorbutton1"
-                style="@style/ColorButton"
-                android:background="@drawable/color_button_1" />
-
-            <Button
-                android:id="@+id/colorbutton2"
-                style="@style/ColorButton"
-                android:background="@drawable/color_button_2" />
-
-            <Button
-                android:id="@+id/colorbutton3"
-                style="@style/ColorButton"
-                android:background="@drawable/color_button_3" />
-
-            <Button
-                android:id="@+id/colorbutton4"
-                style="@style/ColorButton"
-                android:background="@drawable/color_button_4" />
-        </LinearLayout>
+            </TableLayout>
 
         <View style="@style/HorizontalLine" />
 

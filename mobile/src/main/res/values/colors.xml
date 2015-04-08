@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="config_main">#ff0ea8c6</color>
+    <color name="theme_1">#e55337</color>
+    <color name="theme_2">#14b6cf</color>
+    <color name="theme_3">#050707</color>
+    <color name="theme_4">#263756</color>
+
+    <color name="theme_5">#fe6500</color>
+    <color name="theme_6">#1ea58d</color>
+    <color name="theme_7">#f4ae11</color>
+    <color name="theme_8">#e7166f</color>
+
+    <color name="theme_button_stroke">#ff3d3e3d</color>
+    <color name="theme_button_stroke_press">#ff292a29</color>
 </resources>

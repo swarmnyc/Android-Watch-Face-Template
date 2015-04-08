@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="weather_default_require_interval">1800000</integer>
+    <integer name="theme_size">8</integer>
+    <integer name="theme_row_size">4</integer>
+</resources>

@@ -31,7 +31,7 @@
                 android:resource="@drawable/preview_weather_circular" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.companionConfigurationAction"
-                android:value="com.swarmnyc.watchfaces.CONFIG_WEATHER" />
+                android:value="com.swarmnyc.watchfaces.CONFIG_RUNNER" />
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
                 <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
@@ -54,7 +54,7 @@
                 android:resource="@drawable/preview_modern_circular" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.companionConfigurationAction"
-                android:value="com.swarmnyc.watchfaces.CONFIG_MODERN" />
+                android:value="com.swarmnyc.watchfaces.CONFIG_SLIM" />
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService"  />
                 <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />

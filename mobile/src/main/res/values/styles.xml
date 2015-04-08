@@ -23,11 +23,6 @@
         <item name="android:layout_marginTop">@dimen/main_margin</item>
     </style>
 
-    <style name="ColorButton">
-        <item name="android:layout_width">48dp</item>
-        <item name="android:layout_height">48dp</item>
-    </style>
-
     <style name="SecondTitleLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>

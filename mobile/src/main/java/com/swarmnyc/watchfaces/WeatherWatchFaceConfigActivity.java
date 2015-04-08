@@ -1,6 +1,8 @@
 package com.swarmnyc.watchfaces;
 
 import android.content.Intent;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.wearable.companion.WatchFaceCompanion;
@@ -8,14 +10,15 @@ import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.Switch;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
@@ -24,6 +27,9 @@ import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Wearable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import roboguice.activity.RoboActivity;
 import roboguice.inject.ContentView;
@@ -37,11 +43,12 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     public static final String KEY_CONFIG_TEMPERATURE_SCALE = "TemperatureScale";
     public static final String KEY_CONFIG_THEME = "Theme";
     public static final String KEY_CONFIG_TIMEUNIT = "TimeUnit";
-    private static final String TAG = "WeatherWatchFaceConfigActivity";
+    private static final String TAG = "WeatherWatchFaceConfig";
     public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
-    public static final String PATH_MODERN_CONFIG = "/ModernWeatherWatchFace/Config";
     private static final int TIMEUNIT12 = 0;
     private static final int TIMEUNIT24 = 1;
+    private List<Integer> themes = new ArrayList<>();
+    private List<Button> themeButtons = new ArrayList<>();
 
     ResultCallback<DataApi.DataItemResult> getDataCallback = new ResultCallback<DataApi.DataItemResult>() {
         @Override
@@ -68,14 +75,15 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
                 }
 
                 if (item.containsKey(KEY_CONFIG_REQUIRE_INTERVAL)) {
-                    int interval = item.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
-                    String[] names = getResources().getStringArray(R.array.interval_array);
-                    for (int i = 0; i < names.length; i++) {
-                        if (convertTimeStringToInt(names[i]) == interval) {
-                            mIntervalSpinner.setSelection(i);
-                            break;
-                        }
-                    }
+                    interval = item.getInt(KEY_CONFIG_REQUIRE_INTERVAL);
+                }
+            }
+
+            String[] names = getResources().getStringArray(R.array.interval_array);
+            for (int i = 0; i < names.length; i++) {
+                if (convertTimeStringToInt(names[i]) == interval) {
+                    mIntervalSpinner.setSelection(i);
+                    break;
                 }
             }
 
@@ -115,7 +123,9 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
                 }
             });
 
-            onColorViewClick.onClick(mColorButtonContainer.getChildAt(mTheme - 1));
+            onColorViewClick.onClick(themeButtons.get(mTheme - 1));
+
+            mContainer.setVisibility(View.VISIBLE);
         }
     };
 
@@ -123,8 +133,8 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
         @Override
         public void onClick(View v) {
             mTheme = (int) v.getTag();
-            for (int j = 0; j < mColorButtonContainer.getChildCount(); j++) {
-                mColorButtonContainer.getChildAt(j).setActivated(false);
+            for (int j = 0; j < themeButtons.size(); j++) {
+                themeButtons.get(j).setActivated(false);
             }
             v.setActivated(true);
             changeTheme();
@@ -132,6 +142,9 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     };
 
     private GoogleApiClient mGoogleApiClient;
+
+    @InjectView(R.id.container)
+    private ViewGroup mContainer;
 
     @InjectView(R.id.preview_image)
     private ImageView mPreviewImage;
@@ -146,8 +159,8 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     @InjectView(R.id.switch_time_unit)
     private Switch mTimeUnitSwitch;
 
-    @InjectView(R.id.colorbutton_container)
-    private ViewGroup mColorButtonContainer;
+    @InjectView(R.id.theme_button_container)
+    private TableLayout mThemeButtonContainer;
 
     @InjectView(R.id.view_logo)
     private View mLogo;
@@ -155,7 +168,8 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     private int mTheme = 3;
     private int mTimeUnit = TIMEUNIT12;
     private String mSource;
-    private String mConfigPath = "/Config";
+    private int interval;
+    private boolean alreadyInitialize;
 
 // -------------------------- OTHER METHODS --------------------------
 
@@ -164,12 +178,10 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
         super.onCreate(savedInstanceState);
 
         mSource = getIntent().getAction();
-        if (mSource.endsWith("MODERN")) {
-            mSource="modern";
-            mConfigPath = PATH_MODERN_CONFIG;
+        if (mSource.endsWith("SLIM")) {
+            mSource = "slim";
         } else {
-            mSource="weather";
-            mConfigPath = PATH_CONFIG;
+            mSource = "runner";
         }
 
         mPeerId = getIntent().getStringExtra(WatchFaceCompanion.EXTRA_PEER_ID);
@@ -177,16 +189,8 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
                 .addApi(Wearable.API)
                 .build();
 
-        Uri uri = new Uri.Builder()
-                .scheme("wear")
-                .path(mConfigPath)
-                .authority(mPeerId)
-                .build();
-
-        Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
-                .setResultCallback(getDataCallback);
-
-        initColorButton();
+        int id = this.getResources().getIdentifier(mSource + "_preview", "drawable", WeatherWatchFaceConfigActivity.class.getPackage().getName());
+        mPreviewImage.setImageResource(id);
 
         mLogo.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -196,6 +200,33 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
                 startActivity(intent);
             }
         });
+
+        int themeSize= this.getResources().getInteger(R.integer.theme_size);
+        for (int i =1 ; i <= themeSize; i++){
+             id = this.getResources().getIdentifier("theme_" + i, "color", WeatherWatchFaceConfigActivity.class.getPackage().getName());
+            themes.add(this.getResources().getColor(id));
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+
+        if (!alreadyInitialize) {
+            alreadyInitialize = true;
+
+            initColorButton();
+
+
+            Uri uri = new Uri.Builder()
+                    .scheme("wear")
+                    .path(PATH_CONFIG)
+                    .authority(mPeerId)
+                    .build();
+
+            Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
+                    .setResultCallback(getDataCallback);
+        }
     }
 
     @Override
@@ -230,8 +261,7 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     }
 
     private void changeTheme() {
-        int id = this.getResources().getIdentifier(mSource + "_preview_" + (mTheme), "drawable", WeatherWatchFaceConfigActivity.class.getPackage().getName());
-        mPreviewImage.setImageResource(id);
+        mPreviewImage.setBackgroundColor(themes.get(mTheme - 1));
 
         DataMap dataMap = new DataMap();
         dataMap.putInt(KEY_CONFIG_THEME, mTheme);
@@ -239,31 +269,66 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
     }
 
     private void initColorButton() {
-        mColorButtonContainer.getViewTreeObserver()
-                .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        mColorButtonContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        int count = mColorButtonContainer.getChildCount();
-                        int size = mColorButtonContainer.getMeasuredWidth() / (count + 1);
-                        int margin = size / (count + 1);
-                        for (int i = 0; i < count; i++) {
-                            View view = mColorButtonContainer.getChildAt(i);
-                            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
-                            lp.width = size;
-                            lp.height = size;
-                            lp.leftMargin = margin;
-                            view.setTag(i + 1);
-                            view.setOnClickListener(onColorViewClick);
-                        }
-                    }
-                });
+        int rowSize = this.getResources().getInteger(R.integer.theme_row_size);
+        int count = rowSize;
+        int width = this.mThemeButtonContainer.getWidth() / (rowSize + 1);
+        int margin = width / (rowSize + 1);
+
+        TableRow row = null;
+
+        for (int i = 0; i < this.themes.size(); i++) {
+            if (count == rowSize) {
+                row = new TableRow(this);
+                TableLayout.LayoutParams lp = new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT);
+                lp.topMargin = (int)this.getResources().getDimension(R.dimen.main_margin);
+                row.setLayoutParams(lp);
+
+                this.mThemeButtonContainer.addView(row);
+            }
+
+            if (count == 1) {
+                count = rowSize;
+            } else {
+                count--;
+            }
+
+            StateListDrawable drawable = new StateListDrawable();
+            GradientDrawable shape = new GradientDrawable();
+            shape.setColor(themes.get(i));
+            shape.setStroke(10, this.getResources().getColor(R.color.theme_button_stroke_press));
+            shape.setShape(GradientDrawable.OVAL);
+            drawable.addState(new int[]{android.R.attr.state_pressed}, shape);
+
+            shape = new GradientDrawable();
+            shape.setColor(themes.get(i));
+            shape.setStroke(10, this.getResources().getColor(R.color.theme_button_stroke));
+            shape.setShape(GradientDrawable.OVAL);
+            drawable.addState(new int[]{android.R.attr.state_activated}, shape);
+
+            shape = new GradientDrawable();
+            shape.setColor(themes.get(i));
+            shape.setShape(GradientDrawable.OVAL);
+            drawable.addState(new int[]{android.R.attr.state_enabled}, shape);
+
+            Button view = new Button(this);
+            view.setBackground(drawable);
+
+            row.addView(view);
+            TableRow.LayoutParams lp = (TableRow.LayoutParams) view.getLayoutParams();
+            lp.width = width;
+            lp.height = width;
+            lp.leftMargin = margin;
+            view.setTag(i + 1);
+            view.setOnClickListener(onColorViewClick);
+
+            themeButtons.add(view);
+        }
     }
 
     private void sendConfigUpdateMessage(DataMap config) {
         if (mPeerId != null) {
             Log.d(TAG, "Sending Config: " + config);
-            Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, mConfigPath, config.toByteArray())
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, mPeerId, PATH_CONFIG, config.toByteArray())
                     .setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                         @Override
                         public void onResult(MessageApi.SendMessageResult sendMessageResult) {

@@ -26,12 +26,12 @@
             android:label="@string/title_activity_weather_watch_face_config"
             android:theme="@style/ConfigTheme">
             <intent-filter>
-                <action android:name="com.swarmnyc.watchfaces.CONFIG_WEATHER" />
+                <action android:name="com.swarmnyc.watchfaces.CONFIG_RUNNER" />
                 <category android:name="com.google.android.wearable.watchface.category.COMPANION_CONFIGURATION" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="com.swarmnyc.watchfaces.CONFIG_MODERN" />
+                <action android:name="com.swarmnyc.watchfaces.CONFIG_SLIM" />
                 <category android:name="com.google.android.wearable.watchface.category.COMPANION_CONFIGURATION" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
