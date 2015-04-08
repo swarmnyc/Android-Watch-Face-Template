@@ -9,8 +9,11 @@
     <color name="runner_theme_1_bg">#e55337</color>
     <color name="runner_theme_2_bg">#14b6cf</color>
     <color name="runner_theme_3_bg">#050707</color>
-    <color name="runner_theme_4_bg">#293b8f</color>
-
+    <color name="runner_theme_4_bg">#263756</color>
+    <color name="runner_theme_5_bg">#fe6500</color>
+    <color name="runner_theme_6_bg">#1ea58d</color>
+    <color name="runner_theme_7_bg">#f4ae11</color>
+    <color name="runner_theme_8_bg">#e7166f</color>
 
     <color name="slim_bg_color">#000</color>
     <color name="slim_time_color">#fff</color>
@@ -21,14 +24,26 @@
     <color name="slim_theme_2_bg">#14b6cf</color>
     <color name="slim_theme_3_bg">#050707</color>
     <color name="slim_theme_4_bg">#293b8f</color>
+    <color name="slim_theme_5_bg">#fe6500</color>
+    <color name="slim_theme_6_bg">#1ea58d</color>
+    <color name="slim_theme_7_bg">#f4ae11</color>
+    <color name="slim_theme_8_bg">#e7166f</color>
 
     <color name="slim_theme_1_date">#fff</color>
     <color name="slim_theme_2_date">#fff</color>
     <color name="slim_theme_3_date">#999999</color>
     <color name="slim_theme_4_date">#fff</color>
+    <color name="slim_theme_5_date">#fff</color>
+    <color name="slim_theme_6_date">#fff</color>
+    <color name="slim_theme_7_date">#fff</color>
+    <color name="slim_theme_8_date">#fff</color>
 
     <color name="slim_theme_1_temperature">#fff</color>
     <color name="slim_theme_2_temperature">#fff</color>
     <color name="slim_theme_3_temperature">#999999</color>
     <color name="slim_theme_4_temperature">#fff</color>
+    <color name="slim_theme_5_temperature">#fff</color>
+    <color name="slim_theme_6_temperature">#fff</color>
+    <color name="slim_theme_7_temperature">#fff</color>
+    <color name="slim_theme_8_temperature">#fff</color>
 </resources>
