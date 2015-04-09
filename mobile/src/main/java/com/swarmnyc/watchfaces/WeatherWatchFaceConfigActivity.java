@@ -217,7 +217,6 @@ public class WeatherWatchFaceConfigActivity extends RoboActivity {
 
             initColorButton();
 
-
             Uri uri = new Uri.Builder()
                     .scheme("wear")
                     .path(PATH_CONFIG)
