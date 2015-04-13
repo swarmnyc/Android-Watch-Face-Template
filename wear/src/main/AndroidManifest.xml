@@ -25,10 +25,10 @@
                 android:resource="@xml/watch_face" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.preview"
-                android:resource="@drawable/preview_weather" />
+                android:resource="@drawable/preview_runner" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.preview_circular"
-                android:resource="@drawable/preview_weather_circular" />
+                android:resource="@drawable/preview_weather_runner" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.companionConfigurationAction"
                 android:value="com.swarmnyc.watchfaces.CONFIG_RUNNER" />
@@ -48,10 +48,10 @@
                 android:resource="@xml/watch_face" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.preview"
-                android:resource="@drawable/preview_modern" />
+                android:resource="@drawable/preview_slim" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.preview_circular"
-                android:resource="@drawable/preview_modern_circular" />
+                android:resource="@drawable/preview_modern_slim" />
             <meta-data
                 android:name="com.google.android.wearable.watchface.companionConfigurationAction"
                 android:value="com.swarmnyc.watchfaces.CONFIG_SLIM" />
@@ -60,6 +60,10 @@
                 <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
             </intent-filter>
         </service>
+
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
     </application>
 
 </manifest>

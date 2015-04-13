@@ -13,4 +13,5 @@
 
     <color name="theme_button_stroke">#ff3d3e3d</color>
     <color name="theme_button_stroke_press">#ff292a29</color>
+
 </resources>

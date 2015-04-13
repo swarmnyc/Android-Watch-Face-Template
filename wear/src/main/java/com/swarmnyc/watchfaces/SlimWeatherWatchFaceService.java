@@ -36,6 +36,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
         float mTemperature_picture_size;
 
         private Engine() {
+            super("Slim");
             UPDATE_RATE_MS = 500;
         }
 

@@ -42,7 +42,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            </TableLayout>
+        </TableLayout>
 
         <View style="@style/HorizontalLine" />
 
@@ -57,19 +57,36 @@
             android:id="@+id/switch_time_unit"
             android:layout_marginTop="@dimen/main_margin"
             android:layout_marginBottom="@dimen/main_margin"
-            android:checked="true"/>
+            android:checked="true" />
 
         <View style="@style/HorizontalLine" />
 
-        <TextView
-            style="@style/TitleLabel"
-            android:text="@string/weather" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                style="@style/TitleLabel"
+                android:text="@string/weather" />
+            <Button
+                android:id="@+id/btn_refresh_button"
+                android:text="@string/refresh_button"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:padding="4dp"
+                android:background="@android:color/transparent"
+                android:textColor="@color/refresh_button"
+                android:layout_alignParentRight="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </RelativeLayout>
+
 
         <TextView
             android:text="@string/unit"
             style="@style/SecondTitleLabel"
             android:layout_marginTop="@dimen/main_margin"
-            android:layout_marginBottom="@dimen/main_margin"/>
+            android:layout_marginBottom="@dimen/main_margin" />
 
         <RadioGroup
             android:layout_width="match_parent"
@@ -88,7 +105,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/fahrenheit"
                 android:id="@+id/fahrenheitRadioButton"
-                android:checked="true"/>
+                android:checked="true" />
         </RadioGroup>
 
 
@@ -97,6 +114,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/main_margin"
             android:layout_marginBottom="@dimen/main_margin">
+
             <TextView
                 android:text="@string/update_interval"
                 style="@style/SecondTitleLabel" />
@@ -114,6 +132,7 @@
             android:layout_width="match_parent"
             android:layout_height="120dp"
             android:background="#00b5cf">
+
             <ImageView
                 android:layout_margin="@dimen/main_margin"
                 android:layout_width="match_parent"

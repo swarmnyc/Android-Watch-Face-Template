@@ -27,6 +27,7 @@
     <string name="unit">Unit</string>
     <string name="update_interval">Update Interval</string>
     <string name="company_url">http://swarmnyc.com/</string>
+    <string name="refresh_button">Refresh</string>
 
 
     <string-array name="color_array">

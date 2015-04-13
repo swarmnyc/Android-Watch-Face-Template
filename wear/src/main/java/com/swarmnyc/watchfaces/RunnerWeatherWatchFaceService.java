@@ -33,6 +33,7 @@ public class RunnerWeatherWatchFaceService extends WeatherWatchFaceService {
         protected float mTimeYOffset;
 
         private Engine() {
+            super("Runner");
             UPDATE_RATE_MS = 1000;
         }
 

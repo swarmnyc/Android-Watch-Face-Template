@@ -2,6 +2,7 @@ package com.swarmnyc.watchfaces;
 
 
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -35,7 +36,17 @@ public class WeatherService extends WearableListenerService {
     private GoogleApiClient mGoogleApiClient;
     private LocationManager mLocationManager;
     private Location mLocation;
-    private String mPeerId;
+    private String mPeerId;    
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (WeatherWatchFaceConfigActivity.class.getSimpleName().equals(intent.getAction())) {
+            mPeerId = intent.getStringExtra("PeerId");            
+            startTask();
+        }
+        return super.onStartCommand(intent, flags, startId);
+
+    }
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
@@ -43,14 +54,46 @@ public class WeatherService extends WearableListenerService {
         mPeerId = messageEvent.getSourceNodeId();
         Log.d(TAG, "MessageReceived: " + messageEvent.getPath());
         if (messageEvent.getPath().equals(PATH_SERVICE_REQUIRE)) {
-            Log.d(TAG, "Start Weather AsyncTask");
-            mGoogleApiClient = new GoogleApiClient.Builder(this)
-                    .addApi(Wearable.API)
-                    .build();
+            startTask();
+        }
+    }
 
-            mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            mLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+    private void startTask() {
+        Log.d(TAG, "Start Weather AsyncTask");
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .build();
 
+        mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+        if (mLocation == null) {
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    Log.d(TAG, "onLocationChanged: " + location);
+                    mLocationManager.removeUpdates(this);
+                    mLocation = location;
+                    Task task = new Task();
+                    task.execute();
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                }
+
+                @Override
+                public void onProviderEnabled(String provider) {
+
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+
+                }
+            });
+        } else {
             Task task = new Task();
             task.execute();
         }

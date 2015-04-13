@@ -37,6 +37,7 @@ import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
     public class WeatherWatchFaceEngine extends CanvasWatchFaceService.Engine
@@ -107,8 +108,10 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
         protected int mTemperatureScale;
         protected long mWeatherInfoReceivedTime;
         protected long mWeatherInfoRequiredTime;
+        private String mName;
 
-        public WeatherWatchFaceEngine() {
+        public WeatherWatchFaceEngine(String name) {
+            mName = name;
             mGoogleApiClient = new GoogleApiClient.Builder(WeatherWatchFaceService.this)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
@@ -184,7 +187,7 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
             mSunsetTime = new Time();
 
             mRequireInterval = mResources.getInteger(R.integer.weather_default_require_interval);
-
+            mWeatherInfoRequiredTime = System.currentTimeMillis() - (DateUtils.SECOND_IN_MILLIS * 58);
             mGoogleApiClient.connect();
         }
 
@@ -325,24 +328,37 @@ public abstract class WeatherWatchFaceService extends CanvasWatchFaceService {
                 public void onResult(NodeApi.GetLocalNodeResult getLocalNodeResult) {
                     Uri uri = new Uri.Builder()
                             .scheme("wear")
-                            .path(Consts.PATH_CONFIG)
+                            .path(Consts.PATH_CONFIG + mName)
                             .authority(getLocalNodeResult.getNode().getId())
                             .build();
 
-                    Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
-                            .setResultCallback(
-                                    new ResultCallback<DataApi.DataItemResult>() {
-                                        @Override
-                                        public void onResult(DataApi.DataItemResult dataItemResult) {
-                                            log("Finish Config: " + dataItemResult.getStatus());
-                                            if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
-                                                fetchConfig(DataMapItem.fromDataItem(dataItemResult.getDataItem()).getDataMap());
-                                            }
-                                        }
-                                    }
-                            );
+                    getConfig(uri);
+
+                    uri = new Uri.Builder()
+                            .scheme("wear")
+                            .path(Consts.PATH_WEATHER_INFO)
+                            .authority(getLocalNodeResult.getNode().getId())
+                            .build();
+
+                    getConfig(uri);
                 }
             });
+        }
+
+        protected void getConfig(Uri uri) {
+
+            Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
+                    .setResultCallback(
+                            new ResultCallback<DataApi.DataItemResult>() {
+                                @Override
+                                public void onResult(DataApi.DataItemResult dataItemResult) {
+                                    log("Finish Config: " + dataItemResult.getStatus());
+                                    if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
+                                        fetchConfig(DataMapItem.fromDataItem(dataItemResult.getDataItem()).getDataMap());
+                                    }
+                                }
+                            }
+                    );
         }
 
         protected void log(String message) {

@@ -12,6 +12,7 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
@@ -24,56 +25,25 @@ public class WeatherMessageReceiverService extends WearableListenerService {
     private static long sunrise;
     private static long sunset;
     private static int temperature_scale;
-    private static int theme;
+    private static int theme = 3;
     private static int time_unit;
     private static int interval;
-    private static boolean alreadyInitilize;
+    private static boolean alreadyInitialize;
+    private static String path;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Wearable.API)
-                .build();
-
-        if (!alreadyInitilize) {
-            if (!mGoogleApiClient.isConnected())
-                mGoogleApiClient.connect();
-
-            Wearable.NodeApi.getLocalNode(mGoogleApiClient).setResultCallback(new ResultCallback<NodeApi.GetLocalNodeResult>() {
-                @Override
-                public void onResult(NodeApi.GetLocalNodeResult getLocalNodeResult) {
-                    Uri uri = new Uri.Builder()
-                            .scheme("wear")
-                            .path(Consts.PATH_CONFIG)
-                            .authority(getLocalNodeResult.getNode().getId())
-                            .build();
-
-                    Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
-                            .setResultCallback(
-                                    new ResultCallback<DataApi.DataItemResult>() {
-                                        @Override
-                                        public void onResult(DataApi.DataItemResult dataItemResult) {
-                                            if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
-                                                fetchConfig(DataMapItem.fromDataItem(dataItemResult.getDataItem()).getDataMap());
-                                            }
-                                        }
-                                    }
-                            );
-                }
-            });
-        }
-
     }
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
-        while (!alreadyInitilize){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        Log.d(TAG, "onMessageReceived: " + messageEvent);
+
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addApi(Wearable.API)
+                    .build();
         }
 
         if (!mGoogleApiClient.isConnected())
@@ -81,7 +51,12 @@ public class WeatherMessageReceiverService extends WearableListenerService {
 
         DataMap dataMap = DataMap.fromByteArray(messageEvent.getData());
 
-        if (messageEvent.getPath().equals(Consts.PATH_WEATHER_INFO)) {
+        path = messageEvent.getPath();
+        PutDataMapRequest putDataMapRequest = PutDataMapRequest.create(path);
+        DataMap config = putDataMapRequest.getDataMap();
+
+        if (path.equals(Consts.PATH_WEATHER_INFO)) {
+
             if (dataMap.containsKey(Consts.KEY_WEATHER_CONDITION)) {
                 condition = dataMap.getString(Consts.KEY_WEATHER_CONDITION);
             }
@@ -97,9 +72,48 @@ public class WeatherMessageReceiverService extends WearableListenerService {
             if (dataMap.containsKey(Consts.KEY_WEATHER_SUNSET)) {
                 sunset = dataMap.getLong(Consts.KEY_WEATHER_SUNSET);
             }
-        }
 
-        if (messageEvent.getPath().equals(Consts.PATH_CONFIG)) {
+            config.putLong(Consts.KEY_WEATHER_UPDATE_TIME, System.currentTimeMillis());
+            config.putString(Consts.KEY_WEATHER_CONDITION, condition);
+            config.putInt(Consts.KEY_WEATHER_TEMPERATURE, temperature);
+            config.putLong(Consts.KEY_WEATHER_SUNRISE, sunrise);
+            config.putLong(Consts.KEY_WEATHER_SUNSET, sunset);
+        } else {
+            if (!alreadyInitialize) {
+                Wearable.NodeApi.getLocalNode(mGoogleApiClient).setResultCallback(new ResultCallback<NodeApi.GetLocalNodeResult>() {
+                    @Override
+                    public void onResult(NodeApi.GetLocalNodeResult getLocalNodeResult) {
+                        Uri uri = new Uri.Builder()
+                                .scheme("wear")
+                                .path(path)
+                                .authority(getLocalNodeResult.getNode().getId())
+                                .build();
+
+                        Wearable.DataApi.getDataItem(mGoogleApiClient, uri)
+                                .setResultCallback(
+                                        new ResultCallback<DataApi.DataItemResult>() {
+                                            @Override
+                                            public void onResult(DataApi.DataItemResult dataItemResult) {
+                                                if (dataItemResult.getStatus().isSuccess() && dataItemResult.getDataItem() != null) {
+                                                    fetchConfig(DataMapItem.fromDataItem(dataItemResult.getDataItem()).getDataMap());
+                                                }
+
+                                                alreadyInitialize = true;
+                                            }
+                                        }
+                                );
+                    }
+                });
+
+                while (!alreadyInitialize) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
             if (dataMap.containsKey(Consts.KEY_CONFIG_TEMPERATURE_SCALE)) {
                 temperature_scale = dataMap.getInt(Consts.KEY_CONFIG_TEMPERATURE_SCALE);
             }
@@ -115,24 +129,13 @@ public class WeatherMessageReceiverService extends WearableListenerService {
             if (dataMap.containsKey(Consts.KEY_CONFIG_REQUIRE_INTERVAL)) {
                 interval = dataMap.getInt(Consts.KEY_CONFIG_REQUIRE_INTERVAL);
             }
+
+
+            config.putInt(Consts.KEY_CONFIG_TEMPERATURE_SCALE, temperature_scale);
+            config.putInt(Consts.KEY_CONFIG_THEME, theme);
+            config.putInt(Consts.KEY_CONFIG_TIME_UNIT, time_unit);
+            config.putInt(Consts.KEY_CONFIG_REQUIRE_INTERVAL, interval);
         }
-
-        saveConfig();
-    }
-
-    private void saveConfig() {
-        PutDataMapRequest putDataMapRequest = PutDataMapRequest.create(Consts.PATH_CONFIG);
-
-        DataMap config = putDataMapRequest.getDataMap();
-        config.putLong(Consts.KEY_WEATHER_UPDATE_TIME, System.currentTimeMillis());
-        config.putString(Consts.KEY_WEATHER_CONDITION, condition);
-        config.putInt(Consts.KEY_WEATHER_TEMPERATURE, temperature);
-        config.putLong(Consts.KEY_WEATHER_SUNRISE, sunrise);
-        config.putLong(Consts.KEY_WEATHER_SUNSET, sunset);
-        config.putInt(Consts.KEY_CONFIG_TEMPERATURE_SCALE, temperature_scale);
-        config.putInt(Consts.KEY_CONFIG_THEME, theme);
-        config.putInt(Consts.KEY_CONFIG_TIME_UNIT, time_unit);
-        config.putInt(Consts.KEY_CONFIG_REQUIRE_INTERVAL, interval);
 
         Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapRequest.asPutDataRequest())
                 .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
@@ -177,8 +180,6 @@ public class WeatherMessageReceiverService extends WearableListenerService {
         if (config.containsKey(Consts.KEY_CONFIG_REQUIRE_INTERVAL)) {
             interval = config.getInt(Consts.KEY_CONFIG_REQUIRE_INTERVAL);
         }
-
-        alreadyInitilize = true;
     }
 }
 

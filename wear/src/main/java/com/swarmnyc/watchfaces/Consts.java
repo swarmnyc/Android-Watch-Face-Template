@@ -10,7 +10,7 @@ public class Consts {
     public static final String KEY_CONFIG_TIME_UNIT = "TimeUnit";
     public static final String KEY_WEATHER_TEMPERATURE = "Temperature";
     public static final String KEY_WEATHER_UPDATE_TIME = "Update_Time";
-    public static final String PATH_CONFIG = "/WeatherWatchFace/Config";
+    public static final String PATH_CONFIG = "/WeatherWatchFace/Config/";
     public static final String PATH_WEATHER_INFO = "/WeatherWatchFace/WeatherInfo";
     public static final String PATH_WEATHER_REQUIRE = "/WeatherService/Require";
     public static final String COLON_STRING = ":";
