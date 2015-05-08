@@ -198,7 +198,7 @@ public class RunnerWeatherWatchFaceService extends WeatherWatchFaceService {
             //Date
             String monthString = ConverterUtil.convertToMonth(mTime.month);
             String dayString = String.valueOf(mTime.monthDay);
-            String daySuffixString = ConverterUtil.getDaySuffix(mTime.monthDay);
+            String daySuffixString = ConverterUtil.getDaySuffix(mTime.monthDay % 10);
 
             float monthWidth = mDatePaint.measureText(monthString);
             float dayWidth = mDatePaint.measureText(dayString);

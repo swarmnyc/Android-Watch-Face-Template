@@ -1,5 +1,6 @@
 package com.swarmnyc.watchfaces;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -10,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.text.format.Time;
+import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
@@ -34,6 +36,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
         int mTemperatureColor;
         int mTemperatureDefaultColor;
         float mTemperature_picture_size;
+        int bottomOffset = 0;
 
         private Engine() {
             super("Slim");
@@ -102,6 +105,8 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             mTemperatureYOffset = (mTemperaturePaint.descent() + mTemperaturePaint.ascent()) / 2;
             mTemperatureSuffixYOffset = (mTemperatureSuffixPaint.descent() + mTemperatureSuffixPaint.ascent()) / 2;
             mDebugInfoYOffset = 5 + mDebugInfoPaint.getTextSize() + (mDebugInfoPaint.descent() + mDebugInfoPaint.ascent()) / 2;
+
+            bottomOffset = insets.getSystemWindowInsetBottom();
         }
 
         @Override
@@ -109,7 +114,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             super.fetchConfig(config);
             if (config.containsKey(Consts.KEY_CONFIG_THEME)) {
                 mBackgroundColor = mResources.getColor(mResources.getIdentifier("slim_theme_" + mTheme + "_bg", "color", Consts.PACKAGE_NAME));
-                mDateColor = mResources.getColor(mResources.getIdentifier("slim_theme_" + mTheme + "_date", "color",Consts.PACKAGE_NAME));
+                mDateColor = mResources.getColor(mResources.getIdentifier("slim_theme_" + mTheme + "_date", "color", Consts.PACKAGE_NAME));
                 mTemperatureColor = mResources.getColor(mResources.getIdentifier("slim_theme_" + mTheme + "_temperature", "color", Consts.PACKAGE_NAME));
 
                 if (!isInAmbientMode()) {
@@ -179,7 +184,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             float hourWidth = mTimePaint.measureText(hourString);
 
             float x = radius - hourWidth - mColonXOffset;
-            float y = radius - mTimeYOffset + TIME_DATE_DISTANCE;
+            float y = radius - mTimeYOffset;
             float suffixY;
 
             canvas.drawText(hourString, x, y, mTimePaint);
@@ -194,7 +199,7 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
             canvas.drawText(minString, x, y, mTimePaint);
 
             //Date
-            y = radius + mTimeYOffset + mDateYOffset;
+            y = radius + mTimeYOffset + mDateYOffset - TIME_DATE_DISTANCE;
 
             String dateString = ConverterUtil.convertToMonth(mTime.month).toUpperCase() + " " + String.valueOf(mTime.monthDay);
 
@@ -228,10 +233,11 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
                         Drawable b = mResources.getDrawable(id);
                         mWeatherConditionDrawable = ((BitmapDrawable) b).getBitmap();
                         float scaledWidth = (mTemperature_picture_size / mWeatherConditionDrawable.getHeight()) * mWeatherConditionDrawable.getWidth();
-                        mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int)scaledWidth,(int)mTemperature_picture_size, true);
+                        mWeatherConditionDrawable = Bitmap.createScaledBitmap(mWeatherConditionDrawable, (int) scaledWidth, (int) mTemperature_picture_size, true);
                     }
 
-                    canvas.drawBitmap(mWeatherConditionDrawable, radius - mWeatherConditionDrawable.getWidth() / 2, height - mWeatherConditionDrawable.getHeight(), null);
+                    y = height - mWeatherConditionDrawable.getHeight() - bottomOffset;
+                    canvas.drawBitmap(mWeatherConditionDrawable, radius - mWeatherConditionDrawable.getWidth() / 2, y, null);
                 }
 
                 //temperature
@@ -241,7 +247,12 @@ public class SlimWeatherWatchFaceService extends WeatherWatchFaceService {
                     float temperatureWidth = mTemperaturePaint.measureText(temperatureString);
                     float temperatureRadius = (temperatureWidth + mTemperatureSuffixPaint.measureText(temperatureScaleString)) / 2;
                     x = radius - temperatureRadius;
-                    y = bounds.height() * 0.75f;
+                    if (isRound){
+                        y = bounds.height() * 0.8f - bottomOffset;
+                    }else {
+                        y = bounds.height() * 0.75f - bottomOffset;
+                    }
+
                     suffixY = y - mTemperatureSuffixYOffset;
                     y -= mTemperatureYOffset;
                     canvas.drawText(temperatureString, x, y, mTemperaturePaint);
